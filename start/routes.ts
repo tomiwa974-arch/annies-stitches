@@ -9,6 +9,7 @@
 
 import AuthsController from '#controllers/auths_controller'
 import router from '@adonisjs/core/services/router'
+import { middleware } from '#start/kernel'
 import './auth.js'
 
 const GuestsController = () => import('#controllers/guests_controller')
@@ -32,6 +33,15 @@ router.get('/api/works', [GuestsController, 'getWorks'])
 router.get('/api/works/category/:categoryId', [GuestsController, 'getWorksByCategory'])
 router.get('/api/products', [GuestsController, 'getProducts'])
 router.get('/api/user', [AuthsController, 'getUserData'])
+router.post('/api/cart', [GuestsController, 'addToCart']).use(middleware.auth())
+router.get('/api/cart', [GuestsController, 'getCart']).use(middleware.auth())
+router.put('/api/cart/:id', [GuestsController, 'updateCartItem']).use(middleware.auth())
+router.delete('/api/cart/:id', [GuestsController, 'removeFromCart']).use(middleware.auth())
+router.post('/api/wishlist', [GuestsController, 'addToWishlist']).use(middleware.auth())
+router.get('/api/wishlist', [GuestsController, 'getWishlist']).use(middleware.auth())
+router.delete('/api/wishlist/:id', [GuestsController, 'removeFromWishlist']).use(middleware.auth())
+router.post('/api/orders', [GuestsController, 'createOrder']).use(middleware.auth())
+router.get('/api/orders', [GuestsController, 'getMyOrders']).use(middleware.auth())
 
 // ============ AUTH ROUTES ============
 router.get('/login', [AuthsController, 'showLogin']).as('auth.login')

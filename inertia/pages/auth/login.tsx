@@ -17,7 +17,6 @@ export default function Login() {
     // Check sessionStorage first (set by store.tsx)
     const storedRedirect = sessionStorage.getItem('redirectAfterLogin');
     if (storedRedirect) {
-      sessionStorage.removeItem('redirectAfterLogin');
       return storedRedirect;
     }
     
@@ -45,21 +44,18 @@ export default function Login() {
           email: formData.email,
           password: formData.password,
           remember: formData.remember,
+          redirect: redirectUrl,
         },
         {
           onSuccess: () => {
-            // Clear any pending action session data
-            const pendingAction = sessionStorage.getItem('pendingAction');
-            if (pendingAction) {
-              // Keep pending action for store.tsx to process
-              // Don't remove it here - store.tsx will handle it
-            }
-            router.visit(redirectUrl);
+            sessionStorage.removeItem('redirectAfterLogin');
           },
           onError: (error) => {
             console.error('Login error:', error);
             if (error.message) {
               setServerError(error.message);
+            } else if (error.form) {
+              setServerError(error.form);
             } else if (error.errors) {
               // Handle validation errors from backend
               const errorMessages = Object.values(error.errors).flat();
@@ -150,9 +146,9 @@ export default function Login() {
               </div>
             )}
             
-            {errors?.email && (
+            {(errors?.email || errors?.form) && (
               <div className="bg-red-500/10 border border-red-500/50 rounded-lg p-3">
-                <p className="text-red-400 text-xs text-center">{errors.email}</p>
+                <p className="text-red-400 text-xs text-center">{errors.email || errors.form}</p>
               </div>
             )}
             

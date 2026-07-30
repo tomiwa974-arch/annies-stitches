@@ -90,10 +90,11 @@ export default function Register() {
       
       await router.post('/register', 
         {
-          name: formData.name.trim(),
+          fullName: formData.name.trim(),
           email: formData.email.toLowerCase().trim(),
           password: formData.password,
-          password_confirmation: formData.passwordConfirmation,
+          passwordConfirmation: formData.passwordConfirmation,
+          terms: formData.agreeTerms,
         },
         {
           onSuccess: () => {

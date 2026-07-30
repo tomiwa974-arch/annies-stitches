@@ -1,5 +1,7 @@
 import { defineConfig } from '@adonisjs/inertia'
 import type { InferSharedProps } from '@adonisjs/inertia/types'
+import type { HttpContext } from '@adonisjs/core/http'
+import { User } from '#models/index'
 
 const inertiaConfig = defineConfig({
   /**
@@ -11,7 +13,27 @@ const inertiaConfig = defineConfig({
    * Data that should be shared with all rendered pages
    */
   sharedData: {
-    // user: (ctx) => ctx.inertia.always(() => ctx.auth.user),
+    auth: (ctx: HttpContext) => ctx.inertia.always(async () => {
+      try {
+        await ctx.auth.check()
+        const user = ctx.auth.user as User | undefined
+
+        return {
+          user: user
+            ? {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email,
+                role: user.role,
+                isActive: user.isActive,
+                createdAt: user.createdAt,
+              }
+            : null,
+        }
+      } catch {
+        return { user: null }
+      }
+    }),
   },
 
   /**

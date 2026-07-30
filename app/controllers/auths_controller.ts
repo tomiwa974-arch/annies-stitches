@@ -23,40 +23,50 @@ export default class AuthsController {
     }
   }
 
-  // User dashboard - protected route
-  async userdashboard({ inertia, auth, response }: HttpContext) {
+  // User dashboard - public page with optional user data
+  async userdashboard({ inertia, auth }: HttpContext) {
+    let user: User | null = null
+
     try {
       await auth.check()
-      const user = auth.user as User
-      return inertia.render('dashboard/user/userdashboard', {
-        user: user ? {
-          id: user.id,
-          fullName: user.fullName,
-          email: user.email,
-          role: user.role,
-          isActive: user.isActive
-        } : null
-      })
-    } catch (error) {
-      console.error('User dashboard error:', error)
-      return response.redirect().toRoute('auth.login')
+      user = auth.user as User
+    } catch {
+      user = null
     }
+
+    return inertia.render('dashboard/user/userdashboard', {
+      user: user ? {
+        id: user.id,
+        fullName: user.fullName,
+        email: user.email,
+        role: user.role,
+        isActive: user.isActive
+      } : null
+    })
   }
 
-  // Render login page - redirects to dashboard if already logged in
-  async showLogin({ inertia, auth, response }: HttpContext) {
+  // Render login page
+  async showLogin({ inertia, auth }: HttpContext) {
     try {
-      await auth.check()
-      return response.redirect().toRoute('user.dashboard')
-    } catch {
-      return inertia.render('auth/login')
-    }
+      await auth.use('web').logout()
+    } catch {}
+
+    return inertia.render('auth/login')
   }
 
   // Handle login form submission
   async login({ request, response, session, auth }: HttpContext) {
     try {
-      const { email, password, remember } = request.only(['email', 'password', 'remember'])
+      try {
+        await auth.use('web').logout()
+      } catch {}
+
+      const { email, password, remember, redirect } = request.only([
+        'email',
+        'password',
+        'remember',
+        'redirect',
+      ])
       
       const user = await User.findBy('email', email)
       
@@ -90,6 +100,10 @@ export default class AuthsController {
       if (user.role === 'admin') {
         return response.redirect().toPath('/admin')
       }
+
+      if (typeof redirect === 'string' && redirect.startsWith('/') && !redirect.startsWith('//')) {
+        return response.redirect().toPath(redirect)
+      }
       
       return response.redirect().toRoute('user.dashboard')
       
@@ -103,13 +117,12 @@ export default class AuthsController {
   }
 
   // Render register page
-  async showRegister({ inertia, auth, response }: HttpContext) {
+  async showRegister({ inertia, auth }: HttpContext) {
     try {
-      await auth.check()
-      return response.redirect().toRoute('user.dashboard')
-    } catch {
-      return inertia.render('auth/register')
-    }
+      await auth.use('web').logout()
+    } catch {}
+
+    return inertia.render('auth/register')
   }
 
   // Handle register form submission
@@ -172,7 +185,7 @@ export default class AuthsController {
   async logout({ auth, response }: HttpContext) {
     try {
       await auth.use('web').logout()
-      return response.redirect().toRoute('auth.login')
+      return response.redirect().toRoute('user.dashboard')
     } catch (error) {
       console.error('Logout error:', error)
       return response.redirect().back()

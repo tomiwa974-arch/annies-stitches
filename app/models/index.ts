@@ -130,6 +130,73 @@ export class Category extends BaseModel {
   declare products: HasMany<typeof Product>
 }
 
+// ==================== CART ITEM MODEL ====================
+export class CartItem extends BaseModel {
+  static table = 'cart_items'
+
+  @column({ isPrimary: true })
+  declare id: number
+
+  @column({ columnName: 'user_id' })
+  declare userId: number
+
+  @column({ columnName: 'product_id' })
+  declare productId: number
+
+  @column()
+  declare size: string | null
+
+  @column()
+  declare quantity: number
+
+  @column()
+  declare color: string | null
+
+  @column({ columnName: 'tailor_measurements' })
+  declare tailorMeasurements: any | null
+
+  @column({ columnName: 'is_custom_tailored' })
+  declare isCustomTailored: boolean
+
+  @column.dateTime({ autoCreate: true, columnName: 'created_at' })
+  declare createdAt: DateTime
+
+  @column.dateTime({ autoCreate: true, autoUpdate: true, columnName: 'updated_at' })
+  declare updatedAt: DateTime
+
+  @belongsTo(() => User)
+  declare user: BelongsTo<typeof User>
+
+  @belongsTo(() => Product)
+  declare product: BelongsTo<typeof Product>
+}
+
+// ==================== WISHLIST ITEM MODEL ====================
+export class WishlistItem extends BaseModel {
+  static table = 'wishlist_items'
+
+  @column({ isPrimary: true })
+  declare id: number
+
+  @column({ columnName: 'user_id' })
+  declare userId: number
+
+  @column({ columnName: 'product_id' })
+  declare productId: number
+
+  @column.dateTime({ autoCreate: true, columnName: 'created_at' })
+  declare createdAt: DateTime
+
+  @column.dateTime({ autoCreate: true, autoUpdate: true, columnName: 'updated_at' })
+  declare updatedAt: DateTime
+
+  @belongsTo(() => User)
+  declare user: BelongsTo<typeof User>
+
+  @belongsTo(() => Product)
+  declare product: BelongsTo<typeof Product>
+}
+
 // ==================== WORK MODEL ====================
 export class Work extends BaseModel {
   static table = 'works'
@@ -208,6 +275,15 @@ export class Product extends BaseModel {
   @column({ columnName: 'store_category' })
   declare storeCategory: string | null
 
+  @column({ columnName: 'color_variations' })
+  declare colorVariations: any | null
+
+  @column({ columnName: 'tailor_measurements' })
+  declare tailorMeasurements: any | null
+
+  @column({ columnName: 'allow_custom_tailoring' })
+  declare allowCustomTailoring: boolean
+
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
   declare createdAt: DateTime
 
@@ -252,11 +328,26 @@ export class Order extends BaseModel {
   @column()
   declare status: 'pending' | 'processing' | 'shipped' | 'delivered' | 'cancelled'
 
+  @column({ columnName: 'tracking_stage' })
+  declare trackingStage: 'received' | 'packaged' | 'shipped' | 'delivered'
+
   @column({ columnName: 'payment_status' })
   declare paymentStatus: 'pending' | 'paid' | 'failed' | 'refunded'
 
   @column()
   declare notes: string | null
+
+  @column.dateTime({ columnName: 'received_at' })
+  declare receivedAt: DateTime | null
+
+  @column.dateTime({ columnName: 'packaged_at' })
+  declare packagedAt: DateTime | null
+
+  @column.dateTime({ columnName: 'shipped_at' })
+  declare shippedAt: DateTime | null
+
+  @column.dateTime({ columnName: 'delivered_at' })
+  declare deliveredAt: DateTime | null
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
   declare createdAt: DateTime
@@ -295,6 +386,15 @@ export class OrderItem extends BaseModel {
 
   @column()
   declare size: string | null
+
+  @column()
+  declare color: string | null
+
+  @column({ columnName: 'tailor_measurements' })
+  declare tailorMeasurements: any | null
+
+  @column({ columnName: 'is_custom_tailored' })
+  declare isCustomTailored: boolean
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
   declare createdAt: DateTime

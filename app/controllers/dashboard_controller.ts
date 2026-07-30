@@ -11,10 +11,30 @@ import {
   User 
 } from '#models/index'
 import app from '@adonisjs/core/services/app'
+import { DateTime } from 'luxon'
 
 export default class DashboardController {
+  private parseJsonField(value: any, fallback: any) {
+    if (!value) return fallback
+    if (typeof value !== 'string') return value
+    try {
+      return JSON.parse(value)
+    } catch {
+      return fallback
+    }
+  }
+
+  private stringifyJsonField(value: any, fallback: any) {
+    return JSON.stringify(this.parseJsonField(value, fallback))
+  }
+
+  private errorMessage(error: unknown) {
+    return error instanceof Error ? error.message : 'Unknown error'
+  }
+
   // Main dashboard page - loads everything
   async index({ inertia }: HttpContext) {
+    try {
     const categories = await Category.query().orderBy('order')
     const works = await Work.query()
       .preload('category')
@@ -133,6 +153,7 @@ export default class DashboardController {
         customer_name: o.customerName,
         total_amount: o.totalAmount,
         status: o.status,
+        tracking_stage: o.trackingStage || 'received',
         created_at: o.createdAt ? o.createdAt.toFormat('yyyy-MM-dd') : 'Unknown'
       })),
       activities: activities.map(a => a.toJSON()),
@@ -141,6 +162,43 @@ export default class DashboardController {
       recentActivity,
       storeCategories: storeCategories.map(c => c.toJSON())
     })
+    } catch (error) {
+      console.error('Error loading admin dashboard:', error)
+      return inertia.render('dashboard/admin/index', {
+        activeTab: 'dashboard',
+        categories: [],
+        works: [],
+        products: [],
+        orders: [],
+        activities: [],
+        collection: {
+          id: 0,
+          title: "Annie's Stitches",
+          bio: '',
+          journeyText: '',
+          happyClients: 0,
+          yearsExperience: 0,
+          services: ['CUSTOM TAILORING', 'READY-TO-WEAR'],
+        },
+        stats: {
+          totalProducts: 0,
+          totalOrders: 0,
+          totalWorks: 0,
+          totalCategories: 0,
+          totalWishlists: 0,
+          totalRevenue: 0,
+          pendingOrders: 0,
+          completedOrders: 0,
+          totalUsers: 0,
+          totalCartAdds: 0,
+          totalViews: 0,
+          popularProducts: [],
+        },
+        recentActivity: [],
+        storeCategories: [],
+        databaseError: 'Database is not connected',
+      })
+    }
   }
 
   // ============ COLLECTIONS / CATEGORIES ============
@@ -259,38 +317,60 @@ export default class DashboardController {
     }
   }
 
-  async storeStoreCategory({ request, response }: HttpContext) {
+  async storeStoreCategory({ request, response, session }: HttpContext) {
     try {
       const { name, slug } = request.all()
+      if (!name || !String(name).trim()) {
+        session.flash('errors', { form: 'Store category name is required.' })
+        return response.redirect().back()
+      }
+
+      const cleanName = String(name).trim()
+      const cleanSlug = String(slug || cleanName)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
+
       const existingCount = await StoreCategory.query().count('* as total')
       const order = Number(existingCount[0].$extras.total)
       
       await StoreCategory.create({
-        name: name,
-        slug: slug || name.toLowerCase().replace(/\s+/g, '-'),
+        name: cleanName,
+        slug: cleanSlug,
         order: order,
         isActive: true
       })
       return response.redirect().back()
     } catch (error) {
       console.error('Error creating store category:', error)
+      session.flash('errors', { form: `Failed to create store category: ${this.errorMessage(error)}` })
       return response.redirect().back()
     }
   }
 
-  async updateStoreCategory({ params, request, response }: HttpContext) {
+  async updateStoreCategory({ params, request, response, session }: HttpContext) {
     try {
       const storeCategory = await StoreCategory.findOrFail(params.id)
       const { name, slug } = request.all()
+      if (!name || !String(name).trim()) {
+        session.flash('errors', { form: 'Store category name is required.' })
+        return response.redirect().back()
+      }
+      const cleanName = String(name).trim()
+      const cleanSlug = String(slug || cleanName)
+        .trim()
+        .toLowerCase()
+        .replace(/\s+/g, '-')
       
       storeCategory.merge({
-        name: name,
-        slug: slug || name.toLowerCase().replace(/\s+/g, '-')
+        name: cleanName,
+        slug: cleanSlug
       })
       await storeCategory.save()
       return response.redirect().back()
     } catch (error) {
       console.error('Error updating store category:', error)
+      session.flash('errors', { form: `Failed to update store category: ${this.errorMessage(error)}` })
       return response.redirect().back()
     }
   }
@@ -419,6 +499,7 @@ export default class DashboardController {
   // ============ STORE / PRODUCTS ============
   
   async store({ inertia }: HttpContext) {
+    try {
     const products = await Product.query()
       .preload('images')
       .orderBy('createdAt', 'desc')
@@ -432,11 +513,38 @@ export default class DashboardController {
       products: products.map(p => p.toJSON()),
       storeCategories: storeCategories.map(c => c.toJSON())
     })
+    } catch (error) {
+      console.error('Error loading admin store:', error)
+      return inertia.render('dashboard/admin/index', {
+        activeTab: 'store',
+        products: [],
+        storeCategories: [],
+        databaseError: 'Database is not connected',
+      })
+    }
   }
 
-  async storeProduct({ request, response }: HttpContext) {
+  async storeProduct({ request, response, session }: HttpContext) {
     try {
-      const { name, description, price, size, stock, store_category } = request.all()
+      const {
+        name,
+        description,
+        price,
+        size,
+        stock,
+        store_category,
+        color_variations,
+        tailor_measurements,
+        allow_custom_tailoring,
+      } = request.all()
+      if (!name || !String(name).trim()) {
+        session.flash('errors', { form: 'Product name is required.' })
+        return response.redirect().back()
+      }
+      if (price === undefined || price === null || String(price).trim() === '') {
+        session.flash('errors', { form: 'Product price is required.' })
+        return response.redirect().back()
+      }
       
       let imagePath = null
       const image = request.file('imageUrl')
@@ -449,13 +557,16 @@ export default class DashboardController {
       }
       
       const product = await Product.create({
-        name: name,
+        name: String(name).trim(),
         description: description || '',
-        price: price,
+        price: Number(price),
         size: size || '',
-        stock: stock || 0,
-        storeCategory: store_category,
+        stock: Number(stock || 0),
+        storeCategory: store_category || null,
         imageUrl: imagePath,
+        colorVariations: this.stringifyJsonField(color_variations, []),
+        tailorMeasurements: this.stringifyJsonField(tailor_measurements, ['chest', 'waist', 'hips', 'length']),
+        allowCustomTailoring: allow_custom_tailoring !== 'false',
         isActive: true
       })
       
@@ -476,14 +587,36 @@ export default class DashboardController {
       return response.redirect().back()
     } catch (error) {
       console.error('Error creating product:', error)
+      if (request.accepts(['json', 'html']) === 'json') {
+        return response.status(500).json({ error: 'Failed to create product', detail: this.errorMessage(error) })
+      }
+      session.flash('errors', { form: `Failed to create product: ${this.errorMessage(error)}` })
       return response.redirect().back()
     }
   }
 
-  async updateProduct({ params, request, response }: HttpContext) {
+  async updateProduct({ params, request, response, session }: HttpContext) {
     try {
       const product = await Product.findOrFail(params.id)
-      const { name, description, price, size, stock, store_category } = request.all()
+      const {
+        name,
+        description,
+        price,
+        size,
+        stock,
+        store_category,
+        color_variations,
+        tailor_measurements,
+        allow_custom_tailoring,
+      } = request.all()
+      if (!name || !String(name).trim()) {
+        session.flash('errors', { form: 'Product name is required.' })
+        return response.redirect().back()
+      }
+      if (price === undefined || price === null || String(price).trim() === '') {
+        session.flash('errors', { form: 'Product price is required.' })
+        return response.redirect().back()
+      }
       
       let imagePath = product.imageUrl
       const image = request.file('imageUrl')
@@ -496,13 +629,16 @@ export default class DashboardController {
       }
       
       product.merge({
-        name: name,
+        name: String(name).trim(),
         description: description || '',
-        price: price,
+        price: Number(price),
         size: size || '',
-        stock: stock || 0,
-        storeCategory: store_category,
-        imageUrl: imagePath
+        stock: Number(stock || 0),
+        storeCategory: store_category || null,
+        imageUrl: imagePath,
+        colorVariations: this.stringifyJsonField(color_variations, []),
+        tailorMeasurements: this.stringifyJsonField(tailor_measurements, ['chest', 'waist', 'hips', 'length']),
+        allowCustomTailoring: allow_custom_tailoring !== 'false'
       })
       await product.save()
       
@@ -526,6 +662,10 @@ export default class DashboardController {
       return response.redirect().back()
     } catch (error) {
       console.error('Error updating product:', error)
+      if (request.accepts(['json', 'html']) === 'json') {
+        return response.status(500).json({ error: 'Failed to update product', detail: this.errorMessage(error) })
+      }
+      session.flash('errors', { form: `Failed to update product: ${this.errorMessage(error)}` })
       return response.redirect().back()
     }
   }
@@ -585,6 +725,7 @@ export default class DashboardController {
         customer_name: o.customerName,
         total_amount: o.totalAmount,
         status: o.status,
+        tracking_stage: o.trackingStage || 'received',
         created_at: o.createdAt ? o.createdAt.toFormat('yyyy-MM-dd') : 'Unknown'
       })),
       stats: orderStats
@@ -594,9 +735,16 @@ export default class DashboardController {
   async updateOrderStatus({ params, request, response }: HttpContext) {
     try {
       const order = await Order.findOrFail(params.id)
-      const { status } = request.all()
+      const { status, trackingStage } = request.all()
       
       if (status) order.status = status
+      if (trackingStage) {
+        order.trackingStage = trackingStage
+        if (trackingStage === 'received' && !order.receivedAt) order.receivedAt = DateTime.now()
+        if (trackingStage === 'packaged' && !order.packagedAt) order.packagedAt = DateTime.now()
+        if (trackingStage === 'shipped' && !order.shippedAt) order.shippedAt = DateTime.now()
+        if (trackingStage === 'delivered' && !order.deliveredAt) order.deliveredAt = DateTime.now()
+      }
       await order.save()
       return response.redirect().back()
     } catch (error) {
@@ -631,6 +779,7 @@ export default class DashboardController {
         customer_name: order.customerName,
         total_amount: order.totalAmount,
         status: order.status,
+        tracking_stage: order.trackingStage || 'received',
         created_at: order.createdAt ? order.createdAt.toFormat('yyyy-MM-dd') : 'Unknown',
         items: formattedItems,
         user: order.user ? {
