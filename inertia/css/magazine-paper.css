@@ -1,0 +1,154 @@
+.magazine-paper-reader {
+  position: relative;
+  outline-offset: 6px;
+}
+.magazine-paper-surface {
+  position: relative;
+  width: min(100%, 800px, calc((100svh - 220px) * 1.5));
+  aspect-ratio: 1.5;
+  margin-inline: auto;
+  filter: drop-shadow(0 18px 20px #140a1645);
+  touch-action: pan-y;
+  overflow: clip;
+  overflow-clip-margin: 28px;
+}
+.magazine-paper-stage {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.magazine-paper-host .stf__wrapper {
+  width: 100%;
+  height: 100%;
+}
+.magazine-paper-host .screen-paper {
+  overflow: hidden;
+  background: #f2ecdf;
+  container-type: inline-size;
+}
+.magazine-paper-host .screen-paper::before {
+  content: none;
+}
+.magazine-soft-page .journal-page {
+  background: #f2ecdf;
+}
+.magazine-paper-host .issue-page-photo > img {
+  object-fit: cover;
+}
+.atelier-site.atelier-magazine .magazine-paper-host .journal-page p {
+  font-size: clamp(11px, 3.1cqw, 16px);
+}
+.atelier-site.atelier-magazine .magazine-paper-host .journal-page h2 {
+  font-size: clamp(22px, 6.5cqw, 36px);
+}
+.journal-immersive.atelier-site.atelier-magazine .magazine-paper-host .journal-page p {
+  font-size: clamp(15px, 2.25cqw, 23px);
+}
+.journal-immersive.atelier-site.atelier-magazine .magazine-paper-host .journal-page h2 {
+  font-size: clamp(26px, 6.2cqw, 66px);
+}
+.journal-immersive .magazine-paper-reader.is-single .magazine-paper-host .journal-page p {
+  font-size: clamp(15px, 4.1cqw, 21px);
+}
+.journal-immersive .magazine-paper-reader.is-single .magazine-paper-host .journal-page h2 {
+  font-size: clamp(30px, 8cqw, 58px);
+}
+.magazine-soft-page.journal-page {
+  background: #f2ecdf;
+}
+.magazine-soft-page.--left {
+  box-shadow: inset -25px 0 24px -22px #21121d80;
+}
+.magazine-soft-page.--right {
+  box-shadow: inset 25px 0 24px -22px #21121d80;
+}
+.magazine-soft-page::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  z-index: 2;
+}
+.magazine-soft-page.--left::after {
+  background: linear-gradient(
+    90deg,
+    #fff1 0%,
+    transparent 70%,
+    #38232b0a 88%,
+    #24141f36 99%,
+    #130c194d
+  );
+}
+.magazine-soft-page.--right::after {
+  background: linear-gradient(
+    90deg,
+    #130c194d,
+    #24141f36 1%,
+    #38232b0a 12%,
+    transparent 30%,
+    #fff1
+  );
+}
+.magazine-deep-gutter {
+  position: absolute;
+  top: 0;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 34px;
+  height: auto;
+  aspect-ratio: auto;
+  bottom: 0;
+  pointer-events: none;
+  z-index: 4;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    #1c0f1b0c 26%,
+    #150a1d50 48%,
+    #150a1d70 50%,
+    #150a1d40 52%,
+    transparent
+  );
+}
+.magazine-paper-reader .journal-controls span {
+  font-size: 10px;
+  letter-spacing: 0.12em;
+  color: #e3ccc1;
+}
+.magazine-paper-loading {
+  position: absolute;
+  top: 40%;
+  left: 10%;
+  right: 10%;
+  text-align: center;
+  color: #c9a99c;
+}
+.journal-immersive .magazine-paper-reader,
+.journal-immersive .magazine-paper-stage,
+.journal-immersive .magazine-paper-surface {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  aspect-ratio: auto;
+  margin: 0;
+  filter: none;
+}
+.journal-immersive .magazine-deep-gutter {
+  top: 0;
+  bottom: 0;
+  width: 46px;
+}
+.magazine-paper-reader.is-single .magazine-deep-gutter {
+  display: none;
+}
+@media (max-width: 599px) {
+  .magazine-paper-surface {
+    width: min(100%, 420px);
+    aspect-ratio: 0.72;
+  }
+  .atelier-site.atelier-magazine .magazine-paper-stage .journal-page p {
+    font-size: clamp(12px, 3.5cqw, 17px);
+  }
+}

@@ -1,0 +1,21 @@
+{
+  "provenance": "Original AI-generated concept imagery created with the built-in image generation tool. No existing uploaded or local photographs were used as inputs.",
+  "assets": ["evening", "corset", "asoebi", "menswear", "bridal", "custom", "studio", "suit"],
+  "categories": [
+    {"name":"Evening Gowns","slug":"eveninggowns","asset":"evening","description":"Sculpted evening silhouettes and richly draped occasion wear."},
+    {"name":"Corset Dresses","slug":"corsetdresses","asset":"corset","description":"Considered structure, clean lines, and a personal fit."},
+    {"name":"Aso-Ebi Specials","slug":"asobispecials","asset":"asoebi","description":"Coordinated celebration wear in expressive fabrics."},
+    {"name":"Men's Classic","slug":"mensclassic","asset":"menswear","description":"Refined traditional menswear and tailored essentials."},
+    {"name":"Bridal Collection","slug":"bridalcollection","asset":"bridal","description":"Elegant bridal silhouettes with thoughtful lace and satin details."},
+    {"name":"Custom Pieces","slug":"custompieces","asset":"custom","description":"Individual tailoring for women and men, beginning with a conversation."}
+  ],
+  "products": [
+    {"name":"Burgundy Draped Evening Gown","category":"eveninggowns","asset":"evening","storeCategory":"Evening wear","price":230,"description":"Structured burgundy bodice with a fluid draped skirt. AI-generated design concept for catalogue preview."},
+    {"name":"Ivory Corset Midi Dress","category":"corsetdresses","asset":"corset","storeCategory":"Womenswear","price":185,"description":"A square neckline and sculptural ivory seams. AI-generated design concept for catalogue preview."},
+    {"name":"Emerald Aso-Ebi Occasion Wear","category":"asobispecials","asset":"asoebi","storeCategory":"Aso-Ebi","price":240,"description":"Emerald celebration wear with gold textile details. AI-generated design concept for catalogue preview."},
+    {"name":"Ivory Senator Set","category":"mensclassic","asset":"menswear","storeCategory":"Menswear","price":165,"description":"An embroidered ivory tunic and tailored trousers. AI-generated design concept for catalogue preview."},
+    {"name":"Ivory Lace Bridal Gown","category":"bridalcollection","asset":"bridal","storeCategory":"Bridal","price":450,"description":"A full-length bridal gown with lace sleeves and a satin skirt. AI-generated design concept for catalogue preview."},
+    {"name":"Rust Tailored Trouser Suit","category":"custompieces","asset":"custom","storeCategory":"Womenswear","price":220,"description":"A warm rust tailored jacket and straight-leg trousers. AI-generated design concept for catalogue preview."},
+    {"name":"Chocolate Tailored Suit","category":"mensclassic","asset":"suit","storeCategory":"Menswear","price":260,"description":"A chocolate two-piece suit with an ivory shirt. AI-generated design concept for catalogue preview."}
+  ]
+}

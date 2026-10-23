@@ -14,9 +14,16 @@ import './auth.js'
 
 const GuestsController = () => import('#controllers/guests_controller')
 const DashboardController = () => import('#controllers/dashboard_controller')
+const MagazinesController = () => import('#controllers/magazines_controller')
 
 // Home page
 router.on('/').renderInertia('home')
+router.on('/collection').renderInertia('dashboard/user/userdashboard')
+router.get('/magazine', [MagazinesController, 'index'])
+router.get('/magazine/:id', [MagazinesController, 'index'])
+router.on('/custom').renderInertia('custom')
+router.on('/about').renderInertia('about')
+router.post('/custom/bookings', [() => import('#controllers/fittings_controller'), 'store'])
 
 // ============ GUEST / PUBLIC ROUTES ============
 // Works page (category view)
@@ -61,6 +68,10 @@ router.get('/userdashboard', [AuthsController, 'userdashboard']).as('user.dashbo
 
 // ============ ADMIN ROUTES ============
 // Page views
+router.get('/admin/magazines', [MagazinesController, 'admin']).use(middleware.admin())
+router.post('/admin/magazines', [MagazinesController, 'save']).use(middleware.admin())
+router.post('/admin/magazines/:id', [MagazinesController, 'save']).use(middleware.admin())
+router.delete('/admin/magazines/:id', [MagazinesController, 'destroy']).use(middleware.admin())
 router.get('/admin', [DashboardController, 'index'])
 router.get('/admin/collections', [DashboardController, 'collections'])
 router.get('/admin/works', [DashboardController, 'works'])

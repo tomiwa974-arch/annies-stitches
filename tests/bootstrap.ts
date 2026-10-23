@@ -22,7 +22,13 @@ export const plugins: Config['plugins'] = [assert(), pluginAdonisJS(app)]
  * The teardown functions are executed after all the tests
  */
 export const runnerHooks: Required<Pick<Config, 'setup' | 'teardown'>> = {
-  setup: [],
+  setup: [
+    async () => {
+      // Do not shut down Vite while its initial dependency scan is still running.
+      const vite = await app.container.make('vite')
+      await vite.getDevServer()?.environments.client.depsOptimizer?.scanProcessing
+    },
+  ],
   teardown: [],
 }
 

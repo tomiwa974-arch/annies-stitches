@@ -203,7 +203,7 @@ export function SewingBackground() {
       {/* 2. Silhouette Layer with Sewing Animation */}
       <div className="absolute inset-0 flex items-end justify-center z-10 pb-10 md:pb-0 md:items-center">
         <motion.img
-          src="https://cdn.magicpatterns.com/uploads/aZZE6k6Ei9VHDJjoF6NGhb/woman-sewing-machine-silhouette-crafting-design-fashion-design-silhouette-vector.jpg"
+          src="/images/generated/studio.png"
           alt="Sewing Silhouette"
           className="w-[120%] max-w-[800px] object-contain opacity-20 will-change-transform"
           style={{

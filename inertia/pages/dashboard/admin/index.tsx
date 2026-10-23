@@ -1558,7 +1558,7 @@ export default function AdminIndex({
         <div 
           className="fixed inset-0 bg-cover bg-center bg-no-repeat transition-all duration-700 z-0"
           style={{
-            backgroundImage: `url('/images/admin.png')`,
+            backgroundImage: `url('/images/generated/studio.png')`,
             backgroundAttachment: 'fixed',
           }}
         />
@@ -1586,6 +1586,9 @@ export default function AdminIndex({
           )}
 
           <nav className="p-4 space-y-2">
+            <Link href="/admin/magazines" className="w-full flex items-center gap-3 px-4 py-3 rounded-xl text-white/60 hover:bg-white/10 hover:text-white">
+              <Images size={20} />{isSidebarOpen && <span className="text-sm">Magazines</span>}
+            </Link>
             {navItems.map((item) => {
               const Icon = item.icon;
               return (

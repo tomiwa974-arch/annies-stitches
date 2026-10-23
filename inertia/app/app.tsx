@@ -1,9 +1,11 @@
 /// <reference path="../../adonisrc.ts" />
 /// <reference path="../../config/inertia.ts" />
 
-import '../css/app.css';
-import { createRoot } from 'react-dom/client';
-import { createInertiaApp } from '@inertiajs/react';
+import '../css/app.css'
+import { createRoot } from 'react-dom/client'
+import { createInertiaApp } from '@inertiajs/react'
+import type { ReactNode, ReactElement } from 'react'
+import PublicNavigation from '../pages/components/PublicNavigation'
 
 const appName = import.meta.env.VITE_APP_NAME || 'AdonisJS'
 
@@ -20,14 +22,19 @@ createInertiaApp({
   resolve: (name) => {
     const pagePath = `/inertia/pages/${name}.tsx`
     console.log('Resolving page:', name, 'Path:', pagePath)
-    const page = pages[pagePath]
+    const page = pages[pagePath] as
+      | { default: { layout?: (page: ReactElement) => ReactNode } }
+      | undefined
     if (!page) {
       console.error('Page not found:', pagePath)
+    }
+    if (page && !name.startsWith('dashboard/admin/') && !name.startsWith('errors/')) {
+      page.default.layout = (content) => <PublicNavigation>{content}</PublicNavigation>
     }
     return page
   },
 
   setup({ el, App, props }) {
-    createRoot(el).render(<App {...props} />);
+    createRoot(el).render(<App {...props} />)
   },
-});
+})

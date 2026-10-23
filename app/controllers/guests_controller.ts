@@ -4,98 +4,7 @@ import { DateTime } from 'luxon'
 
 export default class GuestsController {
   private defaultStoreProducts() {
-    return [
-      {
-        id: 1001,
-        name: 'Pearl Corset Dress',
-        description: 'Structured occasion dress with a clean corset finish.',
-        price: 185,
-        size: 'S, M, L',
-        stock: 6,
-        storeCategory: 'Ready-to-wear',
-        imageUrl: '/uploads/products/1778713858824-ChatGPT Image May 13, 2026, 02_52_52 PM.png',
-        colorVariations: [
-          { name: 'Ivory', hex: '#f8f3ea', imageUrl: '/uploads/products/1778713858824-ChatGPT Image May 13, 2026, 02_52_52 PM.png' },
-          { name: 'Onyx', hex: '#111111', imageUrl: '/uploads/products/1778713858824-ChatGPT Image May 13, 2026, 02_52_52 PM.png' },
-        ],
-        allowCustomTailoring: true,
-        tailorMeasurements: ['chest', 'waist', 'hips', 'length'],
-        isActive: true,
-        createdAt: '2026-06-02',
-      },
-      {
-        id: 1002,
-        name: 'Ankara Wrap Set',
-        description: 'Two-piece wrap set cut for everyday polish.',
-        price: 140,
-        size: 'S, M, L, XL',
-        stock: 9,
-        storeCategory: 'Ankara',
-        imageUrl: '/uploads/products/1775669593421-Chic and Trendy Summer Fashion Outfit for Black Women 2025 – Style Tips and Looks.jfif',
-        colorVariations: [
-          { name: 'Coral', hex: '#c85b4b', imageUrl: '/uploads/products/1775669593421-Chic and Trendy Summer Fashion Outfit for Black Women 2025 – Style Tips and Looks.jfif' },
-          { name: 'Gold', hex: '#c7a14a', imageUrl: '/uploads/products/1775669593421-Chic and Trendy Summer Fashion Outfit for Black Women 2025 – Style Tips and Looks.jfif' },
-        ],
-        allowCustomTailoring: true,
-        tailorMeasurements: ['bust', 'waist', 'hips', 'top length', 'skirt length'],
-        isActive: true,
-        createdAt: '2026-06-01',
-      },
-      {
-        id: 1003,
-        name: 'Evening Satin Gown',
-        description: 'Soft satin gown with a tailored bodice.',
-        price: 230,
-        size: 'M, L',
-        stock: 4,
-        storeCategory: 'Evening',
-        imageUrl: '/uploads/products/1775500252676-7c4850f4-9eae-4eb2-90d0-7a37279dd6a5.jfif',
-        colorVariations: [
-          { name: 'Champagne', hex: '#d8c2a0', imageUrl: '/uploads/products/1775500252676-7c4850f4-9eae-4eb2-90d0-7a37279dd6a5.jfif' },
-          { name: 'Midnight', hex: '#151922', imageUrl: '/uploads/products/1775500252676-7c4850f4-9eae-4eb2-90d0-7a37279dd6a5.jfif' },
-        ],
-        allowCustomTailoring: true,
-        tailorMeasurements: ['chest', 'waist', 'hips', 'shoulder', 'length'],
-        isActive: true,
-        createdAt: '2026-05-31',
-      },
-      {
-        id: 1004,
-        name: 'Signature Mini Dress',
-        description: "Minimal mini dress with Annie's classic shape.",
-        price: 120,
-        size: 'XS, S, M',
-        stock: 7,
-        storeCategory: 'Mini Dresses',
-        imageUrl: '/uploads/products/1775496644698-Annies.png',
-        colorVariations: [
-          { name: 'Black', hex: '#111111', imageUrl: '/uploads/products/1775496644698-Annies.png' },
-          { name: 'Pearl', hex: '#f4efe6', imageUrl: '/uploads/products/1775496644698-Annies.png' },
-        ],
-        allowCustomTailoring: true,
-        tailorMeasurements: ['bust', 'waist', 'hips', 'length'],
-        isActive: true,
-        createdAt: '2026-05-30',
-      },
-      {
-        id: 1005,
-        name: 'Classic Native Set',
-        description: 'Tailored traditional set for crisp formal wear.',
-        price: 165,
-        size: 'M, L, XL',
-        stock: 5,
-        storeCategory: 'Menswear',
-        imageUrl: null,
-        colorVariations: [
-          { name: 'Black', hex: '#111111', imageUrl: null },
-          { name: 'Cream', hex: '#efe5d2', imageUrl: null },
-        ],
-        allowCustomTailoring: true,
-        tailorMeasurements: ['chest', 'waist', 'shoulder', 'sleeve', 'trouser length'],
-        isActive: true,
-        createdAt: '2026-05-29',
-      },
-    ]
+    return []
   }
 
   private defaultCollection() {
@@ -179,6 +88,7 @@ export default class GuestsController {
     try {
       // Get all active products
       const products = await Product.query()
+        .preload('images')
         .where('isActive', true)
         .orderBy('createdAt', 'desc')
 
@@ -255,6 +165,7 @@ export default class GuestsController {
   async getProducts({ response }: HttpContext) {
     try {
       const products = await Product.query()
+        .preload('images')
         .where('isActive', true)
         .orderBy('createdAt', 'desc')
       return response.json(products.length > 0 ? products : this.defaultStoreProducts())

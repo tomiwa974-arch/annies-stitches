@@ -1,0 +1,19 @@
+# Magazine publishing
+
+Open **Admin → Magazines** (`/admin/magazines`) using an admin account.
+
+1. Choose **New magazine**, enter its title, issue label and description, and upload a cover. When no cover is selected, the first page image is used.
+2. Add inside pages. The stored cover is separate; reading starts on the first inside page. Choose writing on cream paper, image with caption, image plus writing, or writing on a wine background.
+3. Use **Add image pages** to choose multiple images at once, or add writing pages individually. Use the arrows to arrange pages. Each image accepts JPG, PNG, or WebP up to 8 MB; the combined save supports 20 MB.
+4. Save as a draft to keep an issue private to admin. Use **Preview saved issue** to read a saved draft without publishing it. Select Published and save when ready.
+5. Edit, unpublish, or delete issues from the admin list. Deleting an issue removes its page records; uploaded image files are retained so reused images are not broken.
+
+The public reading room at `/magazine` shows every issue as an open, centered preview in a single vertical stack. Each preview has independent Previous/Next controls, keyboard navigation, and horizontal swipes, so readers can browse without entering fullscreen. Click the pages or that issue's full-screen button to expand from its current spread. New published issues appear below the others. Paper fills the viewport with no surrounding stage, toolbar, or popup. Both the centered preview and immersive reader start open on the inside pages. Cover images remain stored in the database and available in the admin editor; the reading room has no closed-cover cards. Inside pages appear as spreads on landscape desktop screens and individual pages on phones and portrait screens. Both readers use StPageFlip (page-flip 2.0.7) soft pages with geometric corner curls, drag-to-turn on desktop, moving shadows, and shaded inner margins for a recessed binding. Phone swipes are handled separately from the library's short gesture timeout; reduced-motion preferences are respected. Use the navigation printed into the bottom margin, arrow keys (including up/down), Page Up/Down, or horizontal swipes to flip. Escape or the small Close text returns to the reading room. Browser fullscreen is requested from the opening click where supported; a printed Full screen control allows retrying. Mobile browsers that do not support document fullscreen retain the edge-to-edge viewport reader within the browser. Long writing can be scrolled inside a page without triggering a horizontal swipe.
+
+Published issues also have direct URLs at `/magazine/:id`. Drafts return 404 publicly. There is no fixed magazine count. Each issue supports up to 200 inside pages in one save.
+
+Data lives in `magazines` and `magazine_pages`; saves replace the ordered pages in a transaction. Admin mutations require the existing admin middleware, retain CSRF protection, and validate content and uploads. `resources/default-magazines.json` preserves the original edit and supplies a second Occasion Issue using the previously generated fashion assets. `scripts/install-magazine-library.cjs` adds these defaults once and skips existing issues.
+
+Validation includes unit tests for input rules, draft filtering, page order, transactional rollback, and cascading deletion, plus an HTTP integration test covering admin/non-admin access, two-image upload, publishing, validation feedback, unpublishing, and deletion. Tests clean up their own fixtures and uploaded images.
+
+The page-turn engine and static page renderer load on demand. Vite aliases the package source entrypoints to allow the local engine adapter to cancel animation frames and remove resize listeners on cleanup, addressing omissions in upstream 2.0.7. Keep the dependency pinned and recheck that adapter when upgrading. Editorial content is escaped by React before becoming static DOM owned by the library.

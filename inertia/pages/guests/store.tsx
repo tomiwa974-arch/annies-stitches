@@ -86,33 +86,6 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
   const [showTracking, setShowTracking] = useState(false);
   const [purchaseSuccess, setPurchaseSuccess] = useState<OrderSummary | null>(null);
 
-  const [showMainDropdown, setShowMainDropdown] = useState(false);
-  const [showStickyDropdown, setShowStickyDropdown] = useState(false);
-  const [showProfilePage, setShowProfilePage] = useState(false);
-  const [showNotificationsPage, setShowNotificationsPage] = useState(false);
-  const [showSettingsPage, setShowSettingsPage] = useState(false);
-
-  const mainDropdownRef = useRef<HTMLDivElement>(null);
-  const stickyDropdownRef = useRef<HTMLDivElement>(null);
-
-  const notifications = [
-    { id: 1, message: "New order received", time: "5 min ago", read: false },
-    { id: 2, message: "Your item shipped", time: "1 hour ago", read: false },
-    { id: 3, message: "New message from customer", time: "3 hours ago", read: true },
-    { id: 4, message: "Payment received", time: "1 day ago", read: true },
-  ];
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (mainDropdownRef.current && !mainDropdownRef.current.contains(event.target as Node))
-        setShowMainDropdown(false);
-      if (stickyDropdownRef.current && !stickyDropdownRef.current.contains(event.target as Node))
-        setShowStickyDropdown(false);
-    };
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => document.removeEventListener('mousedown', handleClickOutside);
-  }, []);
-
   const [selectedCategory, setSelectedCategory] = useState("all");
   const [isGridView, setIsGridView] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -125,9 +98,6 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
   const [showWishlist, setShowWishlist] = useState(false);
   const [notification, setNotification] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
 
-  const [isSticky, setIsSticky] = useState(false);
-  const buttonsRef = useRef<HTMLDivElement>(null);
-  const stickyTriggerRef = useRef<HTMLDivElement>(null);
   const searchInputRef = useRef<HTMLInputElement>(null);
   const gridContainerRef = useRef<HTMLDivElement>(null);
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -336,16 +306,6 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
     if (product) openProductModal(product);
   }, [products]);
 
-  useEffect(() => {
-    const handleScroll = () => {
-      if (stickyTriggerRef.current) {
-        const shouldBeSticky = stickyTriggerRef.current.getBoundingClientRect().top <= 0;
-        if (shouldBeSticky !== isSticky) setIsSticky(shouldBeSticky);
-      }
-    };
-    window.addEventListener('scroll', handleScroll, { passive: true });
-    return () => window.removeEventListener('scroll', handleScroll);
-  }, [isSticky]);
 
   useEffect(() => {
     if (notification) {
@@ -382,17 +342,6 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
   };
 
   // ── Profile button: guest → /login, logged-in → dropdown ─────────────────
-  const handleProfileClick = () => {
-    if (!isAuthenticated) {
-      saveRedirectUrl();
-      router.visit('/login');
-      return;
-    }
-    if (isSticky) setShowStickyDropdown((v) => !v);
-    else setShowMainDropdown((v) => !v);
-  };
-
-  // ── Cart (requires auth) ──────────────────────────────────────────────────
   const handleCartClick = () => {
     if (!isAuthenticated) {
       saveRedirectUrl();
@@ -540,185 +489,11 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
   const scrollRight = () => gridContainerRef.current?.scrollBy({ left: 400, behavior: 'smooth' });
 
   // ── Nav - UPDATED with dynamic Works button ─────────────────────────────────
-  const navButtons = [
-    { name: "Collection", link: "/userdashboard" },
-    { name: "Works", onClick: goToWorks },
-  ];
-
   // ── Sub-components ────────────────────────────────────────────────────────
 
-  const ProfilePage = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white border border-black/15 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-8 border-b border-black/10 flex justify-between items-center sticky top-0 bg-white">
-          <h2 className="text-3xl font-light text-black">My Profile</h2>
-          <button onClick={() => setShowProfilePage(false)} className="w-10 h-10 rounded-full hover:bg-black hover:text-white transition flex items-center justify-center text-xl text-black">✕</button>
-        </div>
-        <div className="p-8 text-black">
-          <div className="flex items-center gap-6 mb-8">
-            <div className="w-24 h-24 rounded-full bg-zinc-100 flex items-center justify-center text-4xl border-2 border-black/10">👤</div>
-            <div>
-              <h3 className="text-2xl font-medium">{user?.fullName || user?.name || 'User'}</h3>
-              <p className="text-black/70">{user?.email || ''}</p>
-              <p className="text-black/70 text-sm">Member since {user?.createdAt ? new Date(user.createdAt).getFullYear() : '2024'}</p>
-            </div>
-          </div>
-          <div className="space-y-6">
-            <div><label className="text-xs text-black/50 block mb-2">Full Name</label><p className="text-lg border-b border-black/10 pb-2">{user?.fullName || user?.name || 'Not set'}</p></div>
-            <div><label className="text-xs text-black/50 block mb-2">Email</label><p className="text-lg border-b border-black/10 pb-2">{user?.email || 'Not set'}</p></div>
-          </div>
-          <div className="mt-8 flex gap-4">
-            <button className="flex-1 py-3 border border-black rounded-full text-sm hover:bg-black hover:text-white transition bg-white text-black">Edit Profile</button>
-            <button className="flex-1 py-3 bg-black text-white rounded-full text-sm hover:bg-white hover:text-black border border-black transition">Share Profile</button>
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const NotificationsPage = () => (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-      <div className="bg-white border border-black/15 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-        <div className="p-8 border-b border-black/10 flex justify-between items-center sticky top-0 bg-white">
-          <h2 className="text-3xl font-light text-black">Notifications</h2>
-          <button onClick={() => setShowNotificationsPage(false)} className="w-10 h-10 rounded-full hover:bg-black hover:text-white transition flex items-center justify-center text-xl text-black">✕</button>
-        </div>
-        <div className="p-6">
-          <div className="flex justify-between items-center mb-6">
-            <p className="text-sm text-black/70">You have {notifications.filter((n) => !n.read).length} unread notifications</p>
-            <button className="text-sm text-black/70 hover:text-black transition">Mark all as read</button>
-          </div>
-          <div className="space-y-3">
-            {notifications.map((n) => (
-              <div key={n.id} className={`p-5 rounded-xl cursor-pointer hover:bg-zinc-100 ${n.read ? 'bg-white border border-black/10' : 'bg-zinc-100 border-l-4 border-black'}`}>
-                <div className="flex items-start gap-4">
-                  <div className={`w-2 h-2 mt-2 rounded-full ${n.read ? 'bg-black/30' : 'bg-black'}`} />
-                  <div className="flex-1">
-                    <p className="text-base text-black">{n.message}</p>
-                    <p className="text-xs text-black/50 mt-2">{n.time}</p>
-                  </div>
-                </div>
-              </div>
-            ))}
-          </div>
-        </div>
-      </div>
-    </div>
-  );
-
-  const SettingsPage = () => {
-    const [darkMode, setDarkMode] = useState(true);
-    const [emailNotif, setEmailNotif] = useState(true);
-    return (
-      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/30">
-        <div className="bg-white border border-black/15 rounded-2xl max-w-2xl w-full max-h-[90vh] overflow-y-auto">
-          <div className="p-8 border-b border-black/10 flex justify-between items-center sticky top-0 bg-white">
-            <h2 className="text-3xl font-light text-black">Settings</h2>
-            <button onClick={() => setShowSettingsPage(false)} className="w-10 h-10 rounded-full hover:bg-black hover:text-white transition flex items-center justify-center text-xl text-black">✕</button>
-          </div>
-          <div className="p-8 space-y-8 text-black">
-            <div>
-              <h3 className="text-lg font-medium mb-4">Account</h3>
-              <div className="space-y-4">
-                <button className="w-full text-left p-4 bg-white rounded-xl border border-black/10 hover:bg-zinc-100 transition"><span className="block font-medium">Change Password</span><span className="text-sm text-black/70">Update your password regularly</span></button>
-                <button className="w-full text-left p-4 bg-white rounded-xl border border-black/10 hover:bg-zinc-100 transition"><span className="block font-medium">Email Address</span><span className="text-sm text-black/70">{user?.email || 'Not set'}</span></button>
-              </div>
-            </div>
-            <div>
-              <h3 className="text-lg font-medium mb-4">Preferences</h3>
-              <div className="space-y-4">
-                <label className="flex items-center justify-between p-4 bg-white rounded-xl border border-black/10">
-                  <div><span className="block font-medium">Dark Mode</span><span className="text-sm text-black/70">Toggle dark theme</span></div>
-                  <button onClick={() => setDarkMode(!darkMode)} className={`w-14 h-7 rounded-full transition-colors duration-300 ${darkMode ? 'bg-white' : 'bg-white/30'} relative`}>
-                    <div className={`w-5 h-5 rounded-full bg-black absolute top-1 transition-transform duration-300 ${darkMode ? 'right-1' : 'left-1'}`} />
-                  </button>
-                </label>
-                <label className="flex items-center justify-between p-4 bg-white rounded-xl border border-black/10">
-                  <div><span className="block font-medium">Email Notifications</span><span className="text-sm text-black/70">Receive updates via email</span></div>
-                  <button onClick={() => setEmailNotif(!emailNotif)} className={`w-14 h-7 rounded-full transition-colors duration-300 ${emailNotif ? 'bg-white' : 'bg-white/30'} relative`}>
-                    <div className={`w-5 h-5 rounded-full bg-black absolute top-1 transition-transform duration-300 ${emailNotif ? 'right-1' : 'left-1'}`} />
-                  </button>
-                </label>
-              </div>
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
-  // Dropdown only rendered for authenticated users
-  const DropdownMenu = ({ onClose }: { onClose: () => void }) => (
-    <div className="absolute right-0 mt-2 w-56 bg-white border border-black/15 rounded-xl shadow-2xl z-50 overflow-hidden">
-      <div className="p-4 border-b border-black/10">
-        <p className="text-sm font-medium text-black">{user?.fullName || user?.name || 'User'}</p>
-        <p className="text-xs text-black/60">{user?.email || ''}</p>
-      </div>
-      <div className="p-2">
-        <button onClick={() => { setShowProfilePage(true); onClose(); }} className="w-full text-left px-4 py-3 text-sm text-black hover:bg-black hover:text-white rounded-lg transition flex items-center gap-3">
-          <span className="text-lg">👤</span> My Profile
-        </button>
-        <button onClick={() => { setShowNotificationsPage(true); onClose(); }} className="w-full text-left px-4 py-3 text-sm text-black hover:bg-black hover:text-white rounded-lg transition flex items-center gap-3 relative">
-          <span className="text-lg">🔔</span> Notifications
-          <span className="ml-auto bg-red-500 text-white text-xs px-2 py-0.5 rounded-full">{notifications.filter((n) => !n.read).length}</span>
-        </button>
-        <button onClick={() => { setShowSettingsPage(true); onClose(); }} className="w-full text-left px-4 py-3 text-sm text-black hover:bg-black hover:text-white rounded-lg transition flex items-center gap-3">
-          <span className="text-lg">⚙️</span> Settings
-        </button>
-        <div className="border-t border-black/10 my-2" />
-        <Link
-          href="/logout"
-          method="post"
-          as="button"
-          className="w-full text-left px-4 py-3 text-sm text-red-600 hover:bg-red-50 rounded-lg transition flex items-center gap-3"
-          onClick={onClose}
-        >
-          <span className="text-lg">🚪</span> Sign Out
-        </Link>
-      </div>
-    </div>
-  );
-
-  // UPDATED TopNavButtons to handle both Link and button with onClick
+  // Collection browsing remains a store tool below the shared site navigation.
   const TopNavButtons = () => (
-    <nav className="flex justify-between w-full max-w-7xl mx-auto gap-3">
-      {navButtons.map((button, index) => (
-        button.onClick ? (
-          <button
-            key={index}
-            onClick={button.onClick}
-            className="text-xs border border-black px-6 py-2 rounded-full hover:bg-black hover:text-white transition duration-300 whitespace-nowrap bg-white text-black"
-          >
-            {button.name}
-          </button>
-        ) : (
-          <Link
-            key={index}
-            href={button.link}
-            className="text-xs border border-black px-6 py-2 rounded-full hover:bg-black hover:text-white transition duration-300 whitespace-nowrap bg-white text-black"
-          >
-            {button.name}
-          </Link>
-        )
-      ))}
-      {isAuthenticated ? (
-        <Link
-          href="/logout"
-          method="post"
-          as="button"
-          className="text-xs border border-black px-6 py-2 rounded-full hover:bg-black hover:text-white transition duration-300 whitespace-nowrap bg-white text-black"
-        >
-          Logout
-        </Link>
-      ) : (
-        <Link
-          href="/login"
-          className="text-xs border border-black px-6 py-2 rounded-full hover:bg-black hover:text-white transition duration-300 whitespace-nowrap bg-white text-black"
-        >
-          Login/Signup
-        </Link>
-      )}
-    </nav>
+    <button type="button" onClick={goToWorks} className="public-navigation-pill">Browse works</button>
   );
 
   const FooterNavButtons = () => (
@@ -987,7 +762,7 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
     return (
       <>
         <Head title="Store | Annie's Stitches" />
-        <div className="min-h-screen bg-white flex items-center justify-center">
+        <div className="store-sage min-h-screen flex items-center justify-center">
           <div className="text-center">
             <p className="text-4xl mb-4">🛍️</p>
             <p className="text-black/70 text-lg">No products available yet</p>
@@ -1004,18 +779,18 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
 
       <div className={`fixed inset-0 bg-black z-50 pointer-events-none transition-opacity duration-1000 ${pageLoaded ? 'opacity-0' : 'opacity-100'}`} />
 
-      <div className="min-h-screen bg-[#f8f7f4] text-black font-['Inter'] transition-colors duration-1000 relative overflow-hidden">
+      <div className="store-sage min-h-screen font-['Inter'] transition-colors duration-1000 relative overflow-hidden">
         
         {/* Top hero background */}
         <div 
-          className="absolute inset-x-0 top-0 h-[620px] bg-cover bg-center bg-no-repeat transition-all duration-700 z-0"
+          className="store-backdrop absolute inset-x-0 top-0 h-[620px] bg-cover bg-center bg-no-repeat transition-all duration-700 z-0"
           style={{
-            backgroundImage: `url('/images/store.png')`,
+            backgroundImage: `url('/images/generated/studio.png')`,
           }}
         />
         
         {/* Dark overlay for better readability */}
-        <div className="absolute inset-x-0 top-0 h-[620px] bg-[linear-gradient(180deg,rgba(248,247,244,.78),rgba(248,247,244,.96)_66%,#f8f7f4_100%)] z-[1]" />
+        <div className="store-atmosphere absolute inset-x-0 top-0 h-[620px] z-[1]" />
         <div className="pointer-events-none absolute inset-x-0 top-0 z-[2] h-[620px] opacity-[0.26] [background-image:linear-gradient(rgba(0,0,0,.14)_1px,transparent_1px),linear-gradient(90deg,rgba(0,0,0,.12)_1px,transparent_1px)] [background-size:84px_84px]" />
 
         {/* Toast notification */}
@@ -1128,48 +903,32 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
         )}
 
         {/* ── Top navigation ────────────────────────────────────────────── */}
-        <div className="w-full pt-8 px-6 md:px-12 relative z-20">
+        <div className="w-full pt-16 px-6 md:px-12 relative z-20">
           <div className="max-w-7xl mx-auto">
-            <div ref={stickyTriggerRef} className="h-0" />
-            <div ref={buttonsRef} className={`w-full transition-all duration-300 ${isSticky ? 'fixed top-0 left-0 right-0 z-40 bg-[#f8f7f4]/90 py-3 backdrop-blur-xl border-b border-black/10' : 'relative'}`}>
+            <div className="w-full relative">
               <div className="max-w-7xl mx-auto">
                 <div className="flex items-center gap-4">
                   <div className="flex-1"><TopNavButtons /></div>
                   <div className="flex items-center gap-2">
                     {/* Wishlist button - BOUNCING ANIMATION */}
-                    <button onClick={() => setShowTracking(true)} className="relative border border-black/25 bg-white px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-black transition-all duration-300 hover:bg-black hover:text-white">
+                    <button onClick={() => setShowTracking(true)} className="relative rounded-full border border-black/25 bg-white px-4 py-2 text-[10px] uppercase tracking-[0.22em] text-black transition-all duration-300 hover:bg-black hover:text-white">
                       Track
                     </button>
-                    <button onClick={handleWishlistClick} className="relative border border-black/25 bg-white p-2.5 text-black transition-all duration-300 hover:bg-black hover:text-white">
+                    <button onClick={handleWishlistClick} className="relative rounded-full border border-black/25 bg-white p-2.5 text-black transition-all duration-300 hover:bg-black hover:text-white">
                       <span className="text-lg group-hover:scale-110 transition-transform">🤍</span>
                       {wishlist.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">{wishlist.length}</span>}
                     </button>
                     {/* Cart button - BOUNCING ANIMATION */}
-                    <button onClick={handleCartClick} className="relative border border-black/25 bg-white p-2.5 text-black transition-all duration-300 hover:bg-black hover:text-white">
+                    <button onClick={handleCartClick} className="relative rounded-full border border-black/25 bg-white p-2.5 text-black transition-all duration-300 hover:bg-black hover:text-white">
                       <span className="text-lg group-hover:scale-110 transition-transform">🛒</span>
                       {cart.length > 0 && <span className="absolute -top-1 -right-1 w-4 h-4 bg-red-500 text-white text-xs rounded-full flex items-center justify-center animate-pulse">{cart.length}</span>}
                     </button>
                     {/* Profile button - TRANSPARENT */}
-                    <div className="relative" ref={isSticky ? stickyDropdownRef : mainDropdownRef}>
-                      <button
-                        onClick={handleProfileClick}
-                        className="w-10 h-10 border border-black/25 hover:bg-black hover:text-white transition-all duration-300 flex items-center justify-center text-lg bg-white text-black"
-                      >
-                        👤
-                      </button>
-                      {isAuthenticated && (
-                        <>
-                          {isSticky
-                            ? showStickyDropdown && <DropdownMenu onClose={() => setShowStickyDropdown(false)} />
-                            : showMainDropdown && <DropdownMenu onClose={() => setShowMainDropdown(false)} />}
-                        </>
-                      )}
-                    </div>
+
                   </div>
                 </div>
               </div>
             </div>
-            {isSticky && <div className="h-20" />}
           </div>
         </div>
 
@@ -1319,9 +1078,6 @@ export default function Store({ products: initialProducts = [], isEmpty = false 
       </div>
 
       {/* Modals */}
-      {isAuthenticated && showProfilePage && <ProfilePage />}
-      {isAuthenticated && showNotificationsPage && <NotificationsPage />}
-      {isAuthenticated && showSettingsPage && <SettingsPage />}
       {showProductModal && <ProductDetailModal />}
       {showLightbox && <LightboxModal />}
       <TrackingPanel />

@@ -11,6 +11,7 @@
 */
 
 process.env.NODE_ENV = 'test'
+process.env.ANNIES_TEST_RUN = '1'
 
 import 'reflect-metadata'
 import { Ignitor, prettyPrintError } from '@adonisjs/core'

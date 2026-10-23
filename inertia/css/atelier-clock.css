@@ -1,0 +1,103 @@
+.atelier-clock {
+  position: fixed;
+  left: max(18px, env(safe-area-inset-left));
+  bottom: max(18px, env(safe-area-inset-bottom));
+  width: 82px;
+  color: var(--nav-accent);
+  pointer-events: none;
+  user-select: none;
+  text-align: center;
+}
+.atelier-clock-face {
+  position: relative;
+  width: 100%;
+  aspect-ratio: 1;
+  border: 1px solid color-mix(in srgb, var(--nav-accent) 42%, transparent);
+  border-radius: 50%;
+  background: var(--nav-surface);
+  box-shadow:
+    0 4px 18px #160e1820,
+    inset 0 0 16px #ffffff04;
+  backdrop-filter: blur(12px);
+  -webkit-backdrop-filter: blur(12px);
+}
+.atelier-clock-face svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+}
+.atelier-clock-rim {
+  stroke: currentColor;
+  stroke-width: 0.4;
+  opacity: 0.4;
+}
+.clock-minute-mark {
+  stroke: currentColor;
+  stroke-width: 0.5;
+  opacity: 0.35;
+}
+.clock-hour-mark {
+  stroke: currentColor;
+  stroke-width: 1;
+  opacity: 0.85;
+}
+.clock-hour-hand,
+.clock-minute-hand {
+  stroke: var(--nav-text);
+  stroke-linecap: round;
+}
+.clock-hour-hand {
+  stroke-width: 2.4;
+}
+.clock-minute-hand {
+  stroke-width: 1.4;
+}
+.clock-second-hand {
+  stroke: currentColor;
+  stroke-width: 0.7;
+  opacity: 0.8;
+}
+.clock-pin {
+  fill: currentColor;
+}
+.atelier-clock time {
+  position: absolute;
+  top: 65%;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 4px;
+  border-radius: 2px;
+  background: var(--nav-surface);
+  color: var(--nav-text);
+  font:
+    400 9px/1.2 'Instrument Sans',
+    sans-serif;
+  font-variant-numeric: tabular-nums;
+  letter-spacing: 0.05em;
+}
+.atelier-clock-caption {
+  display: block;
+  margin-top: 7px;
+  padding: 2px;
+  border-radius: 2px;
+  background: var(--nav-surface);
+  font:
+    400 7px/1.2 'Instrument Sans',
+    sans-serif;
+  letter-spacing: 0.19em;
+}
+@media (max-width: 600px) {
+  .atelier-clock {
+    width: 65px;
+    left: max(10px, env(safe-area-inset-left));
+    bottom: max(12px, env(safe-area-inset-bottom));
+  }
+  .atelier-clock time {
+    font-size: 8px;
+    padding: 1px 2px;
+  }
+  .atelier-clock-caption {
+    font-size: 6px;
+    margin-top: 5px;
+  }
+}

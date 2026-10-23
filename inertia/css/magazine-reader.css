@@ -1,0 +1,296 @@
+/* Immersive paper uses the viewport itself, not a scaled book on a stage. */
+.journal-issue-stack {
+  display: flex;
+  flex-direction: column;
+}
+.journal-issue-stack > .journal-reader + .journal-reader {
+  border-top: 1px solid #efdfcd24;
+}
+/* A small lift at the outer tip, without adding a stack of closed pages. */
+.journal-face::before,
+.screen-paper::before {
+  content: '';
+  position: absolute;
+  z-index: 2;
+  bottom: 0;
+  right: 0;
+  width: 22px;
+  height: 25px;
+  pointer-events: none;
+  background: linear-gradient(135deg, transparent 40%, #fff3 49%, #21142138 55%, #f2ecdf85 64%);
+  border-bottom-right-radius: 5px;
+}
+.journal-back::before,
+.screen-spread.columns-2 > .screen-paper:first-child::before,
+.screen-leaf-back::before {
+  right: auto;
+  left: 0;
+  transform: scaleX(-1);
+}
+.journal-fullscreen-dialog.journal-immersive[open] {
+  display: block;
+  width: 100vw;
+  height: 100dvh;
+  padding: 0;
+  margin: 0;
+  background: #f2ecdf;
+  overflow: hidden;
+}
+.magazine-screen-reader {
+  position: absolute;
+  inset: 0;
+  overflow: hidden;
+  outline: none;
+  perspective: 2500px;
+  touch-action: pan-y;
+  color: #34262a;
+}
+.screen-spread {
+  position: absolute;
+  inset: 0;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+.screen-spread.columns-1 {
+  grid-template-columns: minmax(0, 1fr);
+}
+.screen-paper {
+  position: relative;
+  height: 100%;
+  min-width: 0;
+  overflow: hidden;
+  container-type: inline-size;
+  background: #f2ecdf;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.screen-spread.columns-2 .screen-paper:first-child::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0 0 0 auto;
+  width: 20px;
+  pointer-events: none;
+  background: linear-gradient(90deg, transparent, #291c2420);
+}
+.screen-spread.columns-2 .screen-paper:last-child::after {
+  content: '';
+  position: absolute;
+  z-index: 1;
+  inset: 0 auto 0 0;
+  width: 20px;
+  pointer-events: none;
+  background: linear-gradient(90deg, #291c2420, transparent);
+}
+.journal-immersive .screen-paper .journal-page {
+  padding: 10% 9% 12%;
+  background: #f2ecdf;
+  color: #34262a;
+}
+.journal-immersive .screen-paper .journal-page.journal-cover,
+.journal-immersive .screen-paper .journal-page.journal-photo {
+  padding: 0;
+  background: #321c26;
+  color: #fff8eb;
+}
+.journal-immersive .screen-paper .journal-page.issue-page-dark {
+  background: #321c26;
+  color: #f2e9db;
+}
+.journal-immersive .screen-paper .journal-page.issue-page-dark p {
+  color: #eadad9;
+}
+.journal-immersive .screen-paper .journal-page h2 {
+  font-size: clamp(26px, 6.2cqw, 66px);
+  line-height: 1.12;
+  letter-spacing: -0.035em;
+}
+.journal-immersive .screen-paper .journal-page p {
+  font-size: clamp(15px, 2.25cqw, 23px);
+  line-height: 1.65;
+}
+.journal-immersive .screen-paper .journal-page .journal-kicker,
+.journal-immersive .screen-paper .journal-running {
+  font-size: clamp(9px, 1.4cqw, 13px);
+  letter-spacing: 0.13em;
+}
+.journal-immersive .screen-paper .journal-running {
+  top: 5%;
+}
+.journal-immersive .screen-paper .journal-folio {
+  display: none;
+}
+.journal-immersive .screen-paper .issue-page-content {
+  inset: 12% 9% max(82px, 10%);
+  scrollbar-width: thin;
+}
+.journal-immersive .screen-paper .issue-inset-image {
+  max-height: 40vh;
+  margin: 5% 0;
+}
+.journal-immersive .screen-paper .issue-photo-caption {
+  bottom: 0;
+  padding: 12% 9% max(90px, 10%);
+  max-height: 85%;
+}
+.journal-immersive .screen-paper .journal-photo > img {
+  object-fit: cover;
+}
+.journal-immersive .screen-paper .journal-cover > div {
+  padding: max(45px, 5vh) 8% max(90px, 10vh);
+}
+.journal-immersive .screen-paper .journal-cover h2 {
+  font-size: clamp(70px, 17cqw, 190px);
+}
+.journal-immersive .screen-paper .journal-cover p {
+  font:
+    400 clamp(30px, 6cqw, 65px)/1.1 Georgia,
+    serif;
+  max-width: 18ch;
+}
+.screen-paper-navigation {
+  position: absolute;
+  z-index: 5;
+  bottom: max(20px, env(safe-area-inset-bottom));
+  left: 6%;
+  right: 6%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  /* Text belongs to the paper; no floating toolbar or panel. */
+  mix-blend-mode: difference;
+  color: #fff;
+  font:
+    13px/1.3 Georgia,
+    serif;
+}
+.screen-paper-navigation button,
+.screen-close,
+.screen-enter-fullscreen {
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  cursor: pointer;
+  padding: 12px 0;
+  text-underline-offset: 5px;
+}
+.screen-paper-navigation button:hover,
+.screen-close:hover,
+.screen-enter-fullscreen:hover {
+  text-decoration: underline;
+}
+.screen-paper-navigation button:disabled {
+  opacity: 0.3;
+  cursor: default;
+}
+.screen-close,
+.screen-enter-fullscreen {
+  position: absolute;
+  z-index: 6;
+  top: max(8px, env(safe-area-inset-top));
+  right: 4%;
+  mix-blend-mode: difference;
+  color: #fff;
+  font:
+    12px Georgia,
+    serif;
+}
+.screen-enter-fullscreen {
+  right: auto;
+  left: 4%;
+}
+.screen-outgoing {
+  z-index: 3;
+  pointer-events: none;
+  display: block;
+  transform-style: preserve-3d;
+}
+.screen-stationary {
+  position: absolute;
+  top: 0;
+  width: 50%;
+}
+.screen-stationary.on-left {
+  left: 0;
+}
+.screen-stationary.on-right {
+  right: 0;
+}
+.screen-hinged-sheet {
+  position: absolute;
+  left: 50%;
+  top: 0;
+  width: 50%;
+  height: 100%;
+  transform-origin: left center;
+  transform-style: preserve-3d;
+  animation: journal-hinge-forward 1000ms cubic-bezier(0.4, 0.05, 0.2, 1) both;
+}
+.screen-leaf-front,
+.screen-leaf-back {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  backface-visibility: hidden;
+  -webkit-backface-visibility: hidden;
+}
+.screen-leaf-back {
+  transform: rotateY(180deg);
+}
+.screen-hinged-sheet .screen-paper::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  pointer-events: none;
+  background: linear-gradient(90deg, #160c1840, transparent 35%, #fff2 80%);
+  animation: journal-turn-light 1000ms ease-in-out both;
+}
+.turn-backward .screen-hinged-sheet {
+  left: 0;
+  transform-origin: right center;
+  animation-name: screen-hinge-backward;
+}
+.screen-outgoing.columns-1 .screen-hinged-sheet {
+  left: 0;
+  width: 100%;
+}
+@keyframes screen-hinge-backward {
+  0% {
+    transform: rotateY(0deg) scaleY(1);
+  }
+  50% {
+    transform: rotateY(90deg) scaleY(0.992);
+  }
+  100% {
+    transform: rotateY(180deg) scaleY(1);
+  }
+}
+.magazine-screen-reader.is-single .screen-paper-navigation {
+  left: 6%;
+  right: 6%;
+  font-size: 12px;
+}
+.magazine-screen-reader.is-single .screen-paper .journal-page p {
+  font-size: clamp(15px, 4.1cqw, 21px);
+}
+.magazine-screen-reader.is-single .screen-paper .journal-page h2 {
+  font-size: clamp(30px, 8cqw, 58px);
+}
+.magazine-screen-reader.is-single .screen-paper .journal-cover h2 {
+  font-size: clamp(70px, 22cqw, 170px);
+}
+.magazine-screen-reader.is-single .screen-paper .journal-cover p {
+  font-size: clamp(28px, 8cqw, 60px);
+}
+@media (prefers-reduced-motion: reduce) {
+  .screen-hinged-sheet,
+  .turn-backward .screen-hinged-sheet {
+    animation-duration: 1ms;
+  }
+  .screen-hinged-sheet .screen-paper::after {
+    animation: none;
+  }
+}
