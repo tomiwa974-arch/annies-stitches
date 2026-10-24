@@ -1,0 +1,490 @@
+.admin-atelier,
+.admin-magazine-atelier {
+  --nav-surface: #40232ff0;
+  --nav-text: #f9eeeb;
+  --nav-accent: #d8a5b7;
+  --nav-selected: #f4e5ea;
+  --nav-ink: #542d3e;
+  --nav-glow: #d8a5b755;
+  --admin-paper: #f3eee5;
+  --admin-ink: #422c36;
+  --admin-muted: #826e75;
+  font-family: 'Instrument Sans', sans-serif;
+}
+.admin-atelier {
+  background: var(--admin-paper);
+  color: var(--admin-ink);
+}
+.admin-atelier .admin-atelier-sidebar {
+  background: #321c26;
+  border-color: #e9d5d31c;
+  box-shadow: 5px 0 24px #321c260b;
+  display: flex;
+  flex-direction: column;
+}
+.admin-atelier-sidebar > div:first-child {
+  min-height: 111px;
+  padding: 25px 24px;
+  border-color: #e9d5d320;
+}
+.admin-atelier-sidebar > div:first-child > a {
+  font:
+    400 39px/0.8 Georgia,
+    serif;
+  letter-spacing: -0.06em;
+  color: #f4e8dc;
+}
+.admin-atelier-sidebar > div:first-child > a span {
+  display: inline-block;
+  margin-top: 15px;
+  font:
+    9px/1.4 'Instrument Sans',
+    sans-serif;
+  letter-spacing: 0.15em;
+  color: #c8a8ad;
+}
+.admin-atelier-sidebar nav {
+  overflow-y: auto;
+  flex: 1;
+  padding: 25px 16px 110px;
+}
+.admin-atelier-sidebar nav > button,
+.admin-atelier-sidebar nav > a {
+  border-radius: 5px;
+  border: 1px solid transparent;
+  color: #d7c0c5;
+  font-size: 13px;
+}
+.admin-atelier-sidebar nav > button[aria-current='page'] {
+  background: #f3e7df;
+  color: #532f3f;
+  border-color: #f3e7df;
+  box-shadow: 0 4px 12px #170e1518;
+}
+.admin-atelier-sidebar nav > :hover {
+  background-color: #ffffff0b;
+}
+.admin-atelier-sidebar nav > button svg,
+.admin-atelier-sidebar nav > a svg {
+  stroke-width: 1.5;
+  flex-shrink: 0;
+}
+.admin-atelier .admin-atelier-main {
+  min-width: 0;
+  min-height: 100vh;
+}
+.admin-atelier .admin-atelier-topbar {
+  background: #f3eee5f2;
+  border-color: #61434e22;
+  padding: 18px 38px;
+  min-height: 112px;
+}
+.admin-atelier-topbar > div {
+  min-height: 76px;
+  gap: 18px;
+}
+.admin-atelier .admin-atelier-topbar h1 {
+  font:
+    400 32px/1.2 Georgia,
+    serif;
+  letter-spacing: -0.035em;
+  color: #422c36;
+  margin-top: 7px;
+}
+.admin-atelier-eyebrow {
+  font-size: 9px;
+  letter-spacing: 0.18em;
+  color: #96717f;
+  line-height: 1.5;
+}
+.admin-atelier-top-actions {
+  display: flex;
+  align-items: center;
+  gap: 25px;
+}
+.admin-atelier-visit {
+  padding: 10px 17px;
+  border: 1px solid #80556550;
+  border-radius: 999px;
+  font-size: 11px;
+  color: #633d4b;
+  white-space: nowrap;
+  transition: background 0.2s;
+}
+.admin-atelier-visit:hover {
+  background: #e7d9d7;
+}
+.admin-clock-slot {
+  flex-shrink: 0;
+  width: 80px;
+  height: 80px;
+}
+.admin-clock-slot .atelier-clock {
+  position: static;
+  width: 80px;
+}
+.admin-clock-slot .atelier-clock time {
+  font-size: 8px;
+}
+.admin-clock-slot .atelier-clock-period {
+  font-size: 6px;
+}
+.admin-atelier .admin-atelier-content {
+  padding: 35px 38px 60px;
+  max-width: 1550px;
+  margin: 0 auto;
+}
+.admin-form-errors {
+  border: 1px solid #b46d7a66;
+  background: #a650650d;
+  color: #a24a60;
+  padding: 13px 16px;
+  margin-bottom: 16px;
+  border-radius: 5px;
+  font-size: 12px;
+  line-height: 1.6;
+}
+.admin-atelier > .fixed .admin-form-errors {
+  color: #f5ccd3;
+}
+.admin-atelier main button[aria-pressed='true'] {
+  background: #75444d;
+  color: #fff5e9;
+}
+.admin-section-tools {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  margin-bottom: 20px;
+  flex-wrap: wrap;
+}
+.admin-section-tools input,
+.admin-section-tools select,
+.admin-users select,
+.admin-fitting-card select {
+  padding: 9px 12px;
+  border: 1px solid #63465033;
+  border-radius: 5px;
+  background: #fffaf2;
+  max-width: 100%;
+  font-size: 12px;
+}
+.admin-users,
+.admin-fitting-card {
+  padding: 24px;
+  background: #fffdf8;
+  border: 1px solid #63465022;
+  border-radius: 8px;
+}
+.admin-users td {
+  font-size: 12px;
+}
+.admin-user-actions {
+  display: flex;
+  gap: 12px;
+}
+.admin-user-actions button {
+  padding: 7px 9px;
+  border: 1px solid #63465033;
+  border-radius: 4px;
+  font-size: 11px;
+}
+.admin-user-actions button:disabled {
+  opacity: 0.4;
+  cursor: default;
+}
+.admin-fitting-card {
+  margin-top: 20px;
+  font-size: 13px;
+  line-height: 1.7;
+}
+.admin-fitting-card h3 {
+  font:
+    24px Georgia,
+    serif;
+}
+.admin-fitting-notes {
+  white-space: pre-wrap;
+  margin: 15px 0;
+}
+.admin-fitting-card a {
+  text-decoration: underline;
+  text-underline-offset: 4px;
+}
+.admin-atelier-top-actions .profile-menu-position {
+  grid-column: auto;
+}
+.admin-atelier-top-actions .profile-dropdown {
+  z-index: 60;
+  min-width: 240px;
+}
+.admin-atelier main .profile-menu-action {
+  color: #422c36;
+}
+.admin-atelier-welcome {
+  margin-bottom: 35px;
+  padding: 12px 0 28px;
+  border-bottom: 1px solid #61434e22;
+}
+.admin-atelier .admin-atelier-welcome h2 {
+  font:
+    400 clamp(30px, 3.5vw, 46px)/1.15 Georgia,
+    serif;
+  letter-spacing: -0.04em;
+  margin: 14px 0;
+}
+.admin-atelier-welcome h2 em {
+  font-weight: 400;
+  color: #946176;
+}
+.admin-atelier-welcome > p:last-child {
+  font-size: 13px;
+  color: #826e75;
+}
+
+/* Reskin existing management panels without changing their controls or data. */
+.admin-atelier main [class~='bg-white/5'],
+.admin-atelier main [class~='bg-white/10'] {
+  background: #fffdf8;
+  border-color: #63465022;
+  box-shadow: 0 3px 14px #422c3605;
+  backdrop-filter: none;
+}
+.admin-atelier main .text-white {
+  color: #422c36;
+}
+.admin-atelier main [class~='text-white/60'] {
+  color: #78616d;
+}
+.admin-atelier main [class~='text-white/40'] {
+  color: #89757e;
+}
+.admin-atelier main [class~='text-white/80'],
+.admin-atelier main [class~='text-white/90'] {
+  color: #59424f;
+}
+.admin-atelier main [class*='border-white/'] {
+  border-color: #63465022;
+}
+.admin-atelier main h2 {
+  font-family: Georgia, serif;
+  font-weight: 400;
+  font-size: 20px;
+}
+.admin-atelier main h3 {
+  font-weight: 400;
+}
+.admin-empty-note {
+  color: #89757e;
+  font-size: 12px;
+  line-height: 1.7;
+  max-width: 45ch;
+}
+.admin-atelier main [class~='text-yellow-400'] {
+  color: #896424;
+}
+.admin-atelier main [class~='text-green-400'] {
+  color: #456a52;
+}
+.admin-atelier main [class~='text-blue-400'] {
+  color: #466a79;
+}
+.admin-atelier main [class~='text-red-400'],
+.admin-atelier main [class~='text-red-100'] {
+  color: #9b4354;
+}
+.admin-atelier main [class~='text-2xl'] {
+  font:
+    400 34px/1.2 Georgia,
+    serif;
+}
+.admin-atelier [class*='bg-gradient-'] {
+  background-image: none;
+  background-color: #75444d;
+}
+.admin-atelier main [class*='bg-gradient-'] .text-white,
+.admin-atelier main [class*='bg-gradient-'].text-white {
+  color: #fff5e9;
+}
+.admin-atelier [class~='bg-purple-500'] {
+  background: #75444d;
+}
+.admin-atelier main [class~='bg-purple-500'] {
+  color: #fff5e9;
+}
+.admin-atelier [class~='text-purple-300'],
+.admin-atelier [class~='text-purple-400'] {
+  color: #b78599;
+}
+.admin-atelier main [class~='text-purple-300'],
+.admin-atelier main [class~='text-purple-400'] {
+  color: #946176;
+}
+.admin-atelier [class~='rounded-2xl'] {
+  border-radius: 8px;
+}
+.admin-atelier [class~='rounded-xl'] {
+  border-radius: 5px;
+}
+.admin-atelier input,
+.admin-atelier textarea,
+.admin-atelier select {
+  color-scheme: light;
+}
+.admin-atelier input[type='file']::file-selector-button {
+  background: #75444d;
+  color: #fff5e9;
+  border: 1px solid #cda5b450;
+}
+.admin-atelier > [class~='fixed'] form > [class~='sticky'][class~='bottom-0'] {
+  background: #402831;
+  border-top: 1px solid #cda5b425;
+}
+.admin-atelier main select {
+  background: #fffaf2;
+  color: #422c36;
+  border-color: #63465033;
+}
+.admin-atelier table {
+  font-size: 13px;
+}
+.admin-atelier thead {
+  background: #eee5df;
+}
+.admin-atelier th {
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  color: #846773;
+}
+.admin-atelier main tbody tr:hover {
+  background: #f5ece7;
+}
+.admin-atelier main [class~='bg-black/60'],
+.admin-atelier main [class~='bg-black/60'] .text-white {
+  background: #422c36;
+  color: #f5e9dd;
+}
+.admin-atelier button:focus-visible,
+.admin-atelier a:focus-visible {
+  outline: 2px solid #b78599;
+  outline-offset: 3px;
+}
+.admin-atelier > [class~='fixed'][class~='inset-0'] {
+  background-color: #21141dc9;
+}
+.admin-atelier > [class~='fixed'] > [class~='bg-white/10'] {
+  background: #402831;
+  box-shadow: 0 25px 80px #160e1950;
+}
+.admin-atelier > [class~='fixed'] input,
+.admin-atelier > [class~='fixed'] textarea,
+.admin-atelier > [class~='fixed'] select {
+  color-scheme: dark;
+}
+.admin-atelier > [class~='fixed'] [class*='focus:border-purple']:focus {
+  border-color: #cf9aae;
+}
+
+.admin-magazine-atelier .magazine-admin-heading {
+  align-items: center;
+  gap: 22px;
+}
+.admin-atelier .magazine-admin-embedded {
+  min-height: 0;
+  background: transparent;
+  color: var(--admin-ink);
+}
+.magazine-admin-panel {
+  min-width: 0;
+}
+.admin-user-group {
+  margin-top: 28px;
+  border: 1px solid #422c361c;
+  border-radius: 8px;
+  background: #fffdf8;
+  overflow: hidden;
+}
+.admin-user-group h3 {
+  padding: 20px 24px;
+  border-bottom: 1px solid #422c361c;
+  font-size: 20px;
+  font-family: 'Cormorant Garamond', Georgia, serif;
+}
+.admin-user-group h3 span {
+  color: var(--admin-muted);
+}
+.admin-presence-online {
+  color: #286450;
+  font-weight: 600;
+}
+.admin-magazine-atelier .magazine-admin-heading > div:first-child {
+  flex: 1;
+}
+.admin-magazine-atelier .magazine-admin-sidebar {
+  background: #321c26;
+}
+.admin-magazine-atelier .magazine-admin-main {
+  background: #f3eee5;
+}
+.admin-magazine-atelier .magazine-admin-card,
+.admin-magazine-atelier .magazine-editor-section {
+  background: #fffdf8;
+  border-radius: 8px;
+}
+@media (max-width: 1000px) {
+  .admin-atelier .admin-atelier-topbar {
+    padding-inline: 24px;
+  }
+  .admin-atelier .admin-atelier-content {
+    padding-inline: 24px;
+  }
+  .admin-atelier-top-actions {
+    gap: 14px;
+  }
+}
+@media (max-width: 767px) {
+  .admin-atelier .admin-atelier-sidebar[data-open='false'] {
+    transform: translateX(-100%);
+  }
+  .admin-atelier .admin-atelier-sidebar[data-open='true'] {
+    width: min(288px, 85vw);
+    box-shadow: 30px 0 90px #21141d55;
+  }
+  .admin-atelier .admin-atelier-main {
+    margin-left: 0;
+  }
+  .admin-atelier .admin-atelier-topbar {
+    min-height: 90px;
+    padding: 12px 16px;
+  }
+  .admin-atelier-topbar > div {
+    min-height: 65px;
+    gap: 10px;
+  }
+  .admin-atelier .admin-atelier-topbar h1 {
+    font-size: 27px;
+  }
+  .admin-atelier-topbar .admin-atelier-eyebrow {
+    font-size: 7px;
+    letter-spacing: 0.1em;
+  }
+  .admin-atelier .admin-atelier-content {
+    padding: 22px 16px 45px;
+  }
+  .admin-atelier-visit {
+    font-size: 10px;
+    padding: 8px 12px;
+  }
+  .admin-atelier main .grid > * {
+    min-width: 0;
+  }
+  .admin-magazine-atelier .magazine-admin-heading {
+    flex-wrap: wrap;
+  }
+}
+@media (max-width: 760px) {
+  .admin-clock-slot {
+    display: none;
+  }
+}

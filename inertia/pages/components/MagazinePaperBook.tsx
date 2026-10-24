@@ -28,6 +28,7 @@ export default function MagazinePaperBook({
   const [page, setPage] = useState(initialPage)
   const [single, setSingle] = useState(false)
   const [busy, setBusy] = useState(false)
+  const [turning, setTurning] = useState(false)
   const [ready, setReady] = useState(false)
   const [failed, setFailed] = useState(false)
   const pointer = useRef<{ x: number; y: number } | null>(null)
@@ -59,6 +60,7 @@ export default function MagazinePaperBook({
       cleanupEngine?.()
       setReady(false)
       setBusy(false)
+      setTurning(false)
       setSingle(portrait)
       const host = document.createElement('div')
       host.className = 'magazine-paper-host'
@@ -115,7 +117,10 @@ export default function MagazinePaperBook({
       }
       book.on('flip', (event) => update(Number(event.data)))
       book.on('changeState', (event) => {
-        if (!disposed) setBusy(event.data === 'flipping' || event.data === 'user_fold')
+        if (!disposed) {
+          setBusy(event.data === 'flipping' || event.data === 'user_fold')
+          setTurning(event.data !== 'read')
+        }
       })
       book.loadFromHTML(nodes)
       update(book.getCurrentPageIndex())
@@ -154,6 +159,7 @@ export default function MagazinePaperBook({
   return (
     <div
       className={`magazine-paper-reader${immersive ? ' magazine-screen-reader' : ' issue-flipbook'}${single ? ' is-single' : ''}`}
+      data-turning={turning}
       tabIndex={0}
       role="group"
       aria-label={`${issue.title}. Drag a page corner, swipe, or use arrow keys.`}

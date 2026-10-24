@@ -5,11 +5,16 @@ import type { InferAuthenticators, InferAuthEvents, Authenticators } from '@adon
 const authConfig = defineConfig({
   default: 'web',
   guards: {
+    admin: sessionGuard({
+      useRememberMeTokens: true,
+      rememberMeTokensAge: '2 years',
+      provider: sessionUserProvider({ model: () => import('#models/user') }),
+    }),
     web: sessionGuard({
       useRememberMeTokens: true,
       rememberMeTokensAge: '2 years',
       provider: sessionUserProvider({
-        model: () => import('#models/user')
+        model: () => import('#models/user'),
       }),
     }),
   },

@@ -6,14 +6,18 @@ export default class AuthMiddleware {
     const { auth, request, response } = ctx
 
     try {
-      await auth.check()
-      await next()
+      if (!(await auth.check()) || !auth.user?.isActive) throw new Error('Unauthenticated')
     } catch {
-      if (request.url().startsWith('/api/')) {
+      if (request.url().startsWith('/api/') || request.url().startsWith('/admin/account')) {
         return response.status(401).json({ error: 'Please login to continue' })
       }
 
-      return response.redirect().toPath(`/login?redirect=${encodeURIComponent(request.url())}`)
+      return response
+        .redirect()
+        .toPath(
+          `${request.url().startsWith('/admin') ? '/admin/login' : '/login'}?redirect=${encodeURIComponent(request.url())}`
+        )
     }
+    return next()
   }
 }

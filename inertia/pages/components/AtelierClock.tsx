@@ -20,7 +20,8 @@ export default function AtelierClock() {
   const seconds = now.getSeconds()
   const minutes = now.getMinutes() + seconds / 60
   const hours = (now.getHours() % 12) + minutes / 60
-  const digital = [now.getHours(), now.getMinutes(), seconds]
+  const period = now.getHours() >= 12 ? 'PM' : 'AM'
+  const digital = [now.getHours() % 12 || 12, now.getMinutes(), seconds]
     .map((n) => String(n).padStart(2, '0'))
     .join(':')
   return (
@@ -65,11 +66,11 @@ export default function AtelierClock() {
           />
           <circle cx="50" cy="50" r="2.2" className="clock-pin" />
         </svg>
-        <time dateTime={now.toISOString()} aria-label={`${digital}, local time`}>
-          {digital}
+        <time dateTime={now.toISOString()} aria-label={`${digital} ${period}, local time`}>
+          <span className="atelier-clock-digits">{digital}</span>
+          <span className="atelier-clock-period">{period}</span>
         </time>
       </div>
-      <span className="atelier-clock-caption">LOCAL TIME</span>
     </aside>
   )
 }

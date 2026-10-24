@@ -1,6 +1,21 @@
+import { deliveryValidator } from '#validators/delivery'
 import type { HttpContext } from '@adonisjs/core/http'
-import { Product, Category, Work, Collection, CartItem, WishlistItem, User, Order, OrderItem } from '#models/index'
+import {
+  Product,
+  Category,
+  Work,
+  Collection,
+  CartItem,
+  WishlistItem,
+  User,
+  Order,
+  OrderItem,
+  Activity,
+} from '#models/index'
 import { DateTime } from 'luxon'
+import db from '@adonisjs/lucid/services/db'
+import { randomUUID } from 'node:crypto'
+import { fieldError } from '#services/admin_uploads'
 
 export default class GuestsController {
   private defaultStoreProducts() {
@@ -13,8 +28,8 @@ export default class GuestsController {
       title: "Annie's Stitches",
       bio: '',
       journeyText: '',
-      happyClients: 1000,
-      yearsExperience: 8,
+      happyClients: 0,
+      yearsExperience: 0,
       services: [
         'CUSTOM TAILORING',
         'CORSET & STATEMENT DRESSES',
@@ -45,20 +60,19 @@ export default class GuestsController {
     return item.product.serialize()
   }
 
-  
   // ============ PAGE RENDERING ============
-  
-  async show({ params, inertia }: HttpContext) {
+
+  async show({ params, inertia, auth, request }: HttpContext) {
     const slug = params.slug as string
 
     try {
       const category = await Category.findBy('slug', slug)
-      
+
       if (!category) {
         return inertia.render('guests/product', {
           category: null,
           works: [],
-          error: 'Category not found'
+          error: 'Category not found',
         })
       }
 
@@ -68,23 +82,31 @@ export default class GuestsController {
         .preload('category')
         .orderBy('createdAt', 'desc')
 
+      await auth.check()
+      await Activity.create({
+        userId: auth.user?.id || null,
+        type: 'view',
+        entityType: 'category',
+        entityId: category.id,
+        description: 'Viewed collection ' + category.name,
+        ipAddress: request.ip(),
+      })
       return inertia.render('guests/product', {
         category: category.serialize(),
-        works: works.map(w => w.serialize()),
-        isEmpty: works.length === 0
+        works: works.map((w) => w.serialize()),
+        isEmpty: works.length === 0,
       })
-
     } catch (error) {
       console.error('Error fetching category:', error)
       return inertia.render('guests/product', {
         category: null,
         works: [],
-        error: true
+        error: true,
       })
     }
   }
-  
-  async store({ inertia }: HttpContext) {
+
+  async store({ inertia, auth, request }: HttpContext) {
     try {
       // Get all active products
       const products = await Product.query()
@@ -93,26 +115,34 @@ export default class GuestsController {
         .orderBy('createdAt', 'desc')
 
       console.log('✅ Store route hit! Found', products.length, 'products')
-      
-      const storeProducts = products.map(p => p.toJSON())
 
-      return inertia.render('guests/store', { 
-        products: storeProducts.length > 0 ? storeProducts : this.defaultStoreProducts(),
-        isEmpty: false
+      await auth.check()
+      await Activity.create({
+        userId: auth.user?.id || null,
+        type: 'view',
+        entityType: 'store',
+        entityId: null,
+        description: 'Visited the store',
+        ipAddress: request.ip(),
       })
-      
+      const storeProducts = products.map((p) => p.toJSON())
+
+      return inertia.render('guests/store', {
+        products: storeProducts.length > 0 ? storeProducts : this.defaultStoreProducts(),
+        isEmpty: false,
+      })
     } catch (error) {
       console.error('Error fetching products:', error)
-      return inertia.render('guests/store', { 
+      return inertia.render('guests/store', {
         products: this.defaultStoreProducts(),
         isEmpty: false,
-        error: true
+        error: true,
       })
     }
   }
 
   // ============ API ROUTES FOR FRONTEND ============
-  
+
   async getCollection({ response }: HttpContext) {
     try {
       const collection = await Collection.first()
@@ -125,9 +155,7 @@ export default class GuestsController {
 
   async getCategories({ response }: HttpContext) {
     try {
-      const categories = await Category.query()
-        .where('isActive', true)
-        .orderBy('order')
+      const categories = await Category.query().where('isActive', true).orderBy('order')
       return response.json(categories)
     } catch (error) {
       console.error('Error fetching categories:', error)
@@ -176,23 +204,36 @@ export default class GuestsController {
   }
 
   // ============ CART & WISHLIST METHODS (Protected) ============
-  
+
   async addToCart({ request, response, auth }: HttpContext) {
     try {
       await auth.check()
       const user = auth.user as User
-      const { productId, size, quantity = 1, color = '', tailorMeasurements = null, isCustomTailored = false } = request.all()
-      const normalizedQuantity = Math.max(1, Number(quantity) || 1)
-      
+      const {
+        productId,
+        size,
+        quantity = 1,
+        color = '',
+        tailorMeasurements = null,
+        isCustomTailored = false,
+      } = request.all()
+      const normalizedQuantity = Number(quantity)
+      if (
+        !Number.isInteger(normalizedQuantity) ||
+        normalizedQuantity < 1 ||
+        normalizedQuantity > 100
+      )
+        return response.badRequest({ error: 'Choose a quantity between 1 and 100.' })
+
       if (!productId) {
         return response.status(400).json({ error: 'Product ID is required' })
       }
-      
+
       const product = await Product.find(productId)
-      if (!product) {
+      if (!product || !product.isActive) {
         return response.status(404).json({ error: 'Product not found' })
       }
-      
+
       const cartItem = await CartItem.query()
         .where('userId', user.id)
         .where('productId', product.id)
@@ -200,6 +241,8 @@ export default class GuestsController {
         .where('color', color || '')
         .first()
 
+      if (product.stock < normalizedQuantity + (cartItem?.quantity || 0))
+        return response.badRequest({ error: 'Not enough stock is available.' })
       if (cartItem) {
         cartItem.quantity += normalizedQuantity
         await cartItem.save()
@@ -215,34 +258,41 @@ export default class GuestsController {
         })
       }
 
+      await Activity.create({
+        userId: user.id,
+        type: 'cart',
+        entityType: 'product',
+        entityId: product.id,
+        description: 'Added ' + product.name + ' to cart',
+      })
       const cart = await CartItem.query()
         .where('userId', user.id)
         .preload('product')
         .orderBy('createdAt', 'desc')
-      
-      return response.json({ 
-        success: true, 
+
+      return response.json({
+        success: true,
         message: 'Added to cart',
-        cart: cart.map((item) => this.serializeCartItem(item))
+        cart: cart.map((item) => this.serializeCartItem(item)),
       })
     } catch (error) {
       return response.status(401).json({ error: 'Please login to add items to cart' })
     }
   }
-  
+
   async getCart({ response, auth }: HttpContext) {
     try {
       await auth.check()
       const user = auth.user as User
-      
+
       const cart = await CartItem.query()
         .where('userId', user.id)
         .preload('product')
         .orderBy('createdAt', 'desc')
-      
-      return response.json({ 
-        success: true, 
-        cart: cart.map((item) => this.serializeCartItem(item))
+
+      return response.json({
+        success: true,
+        cart: cart.map((item) => this.serializeCartItem(item)),
       })
     } catch (error) {
       return response.status(401).json({ error: 'Please login to view cart' })
@@ -256,7 +306,7 @@ export default class GuestsController {
       const { size, quantity, color = '' } = request.all()
       const normalizedQuantity = Number(quantity)
 
-      if (!Number.isFinite(normalizedQuantity)) {
+      if (!Number.isInteger(normalizedQuantity) || normalizedQuantity > 100) {
         return response.status(400).json({ error: 'Quantity is required' })
       }
 
@@ -274,6 +324,9 @@ export default class GuestsController {
       if (normalizedQuantity < 1) {
         await cartItem.delete()
       } else {
+        const product = await Product.findOrFail(cartItem.productId)
+        if (product.stock < normalizedQuantity)
+          return response.badRequest({ error: 'Not enough stock is available.' })
         cartItem.quantity = normalizedQuantity
         await cartItem.save()
       }
@@ -291,22 +344,22 @@ export default class GuestsController {
       return response.status(401).json({ error: 'Please login to modify cart' })
     }
   }
-  
+
   async addToWishlist({ request, response, auth }: HttpContext) {
     try {
       await auth.check()
       const user = auth.user as User
       const { productId } = request.all()
-      
+
       if (!productId) {
         return response.status(400).json({ error: 'Product ID is required' })
       }
-      
+
       const product = await Product.find(productId)
       if (!product) {
         return response.status(404).json({ error: 'Product not found' })
       }
-      
+
       const existing = await WishlistItem.query()
         .where('userId', user.id)
         .where('productId', product.id)
@@ -321,47 +374,57 @@ export default class GuestsController {
         })
       }
 
+      await Activity.create({
+        userId: user.id,
+        type: 'wishlist',
+        entityType: 'product',
+        entityId: product.id,
+        description:
+          (existing ? 'Removed ' : 'Saved ') +
+          product.name +
+          (existing ? ' from wishlist' : ' to wishlist'),
+      })
       const wishlist = await WishlistItem.query()
         .where('userId', user.id)
         .preload('product')
         .orderBy('createdAt', 'desc')
-      
-      return response.json({ 
-        success: true, 
+
+      return response.json({
+        success: true,
         message: existing ? 'Removed from wishlist' : 'Added to wishlist',
-        wishlist: wishlist.map((item) => this.serializeWishlistItem(item))
+        wishlist: wishlist.map((item) => this.serializeWishlistItem(item)),
       })
     } catch (error) {
       return response.status(401).json({ error: 'Please login to add items to wishlist' })
     }
   }
-  
+
   async getWishlist({ response, auth }: HttpContext) {
     try {
       await auth.check()
       const user = auth.user as User
-      
+
       const wishlist = await WishlistItem.query()
         .where('userId', user.id)
         .preload('product')
         .orderBy('createdAt', 'desc')
-      
-      return response.json({ 
-        success: true, 
-        wishlist: wishlist.map((item) => this.serializeWishlistItem(item))
+
+      return response.json({
+        success: true,
+        wishlist: wishlist.map((item) => this.serializeWishlistItem(item)),
       })
     } catch (error) {
       return response.status(401).json({ error: 'Please login to view wishlist' })
     }
   }
-  
+
   async removeFromCart({ params, request, response, auth }: HttpContext) {
     try {
       await auth.check()
       const user = auth.user as User
       const { id } = params
       const { size, color = '' } = request.all()
-      
+
       const cartItem = await CartItem.query()
         .where('userId', user.id)
         .where('productId', id)
@@ -377,37 +440,34 @@ export default class GuestsController {
         .where('userId', user.id)
         .preload('product')
         .orderBy('createdAt', 'desc')
-      
-      return response.json({ 
-        success: true, 
-        message: 'Removed from cart', 
-        cart: cart.map((item) => this.serializeCartItem(item))
+
+      return response.json({
+        success: true,
+        message: 'Removed from cart',
+        cart: cart.map((item) => this.serializeCartItem(item)),
       })
     } catch (error) {
       return response.status(401).json({ error: 'Please login to modify cart' })
     }
   }
-  
+
   async removeFromWishlist({ params, response, auth }: HttpContext) {
     try {
       await auth.check()
       const user = auth.user as User
       const { id } = params
-      
-      await WishlistItem.query()
-        .where('userId', user.id)
-        .where('productId', id)
-        .delete()
+
+      await WishlistItem.query().where('userId', user.id).where('productId', id).delete()
 
       const wishlist = await WishlistItem.query()
         .where('userId', user.id)
         .preload('product')
         .orderBy('createdAt', 'desc')
-      
-      return response.json({ 
-        success: true, 
+
+      return response.json({
+        success: true,
         message: 'Removed from wishlist',
-        wishlist: wishlist.map((item) => this.serializeWishlistItem(item))
+        wishlist: wishlist.map((item) => this.serializeWishlistItem(item)),
       })
     } catch (error) {
       return response.status(401).json({ error: 'Please login to modify wishlist' })
@@ -415,63 +475,139 @@ export default class GuestsController {
   }
 
   async createOrder({ request, response, auth }: HttpContext) {
+    const user = auth.user!
+    const items = request.input('items')
+    if (!Array.isArray(items) || !items.length || items.length > 100)
+      return response.badRequest({ error: 'Choose between 1 and 100 items.' })
+    const idempotencyKey = String(request.header('Idempotency-Key') || '')
+    if (idempotencyKey && !/^[a-zA-Z0-9-]{8,100}$/.test(idempotencyKey))
+      return response.badRequest({ error: 'Invalid checkout identifier.' })
+    const customerName = String(request.input('customerName') || user.fullName || 'Customer')
+      .trim()
+      .slice(0, 120)
+    const customerEmail = String(request.input('customerEmail') || user.email).trim()
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(customerEmail))
+      return response.badRequest({ error: 'Enter a valid contact email.' })
     try {
-      await auth.check()
-      const user = auth.user as User
-      const { customerName, customerEmail, customerPhone, shippingAddress, items = [] } = request.all()
-      const submittedItems = Array.isArray(items) ? items : []
-
-      if (submittedItems.length === 0) {
-        return response.status(400).json({ error: 'No items to checkout' })
-      }
-
-      const totalAmount = submittedItems.reduce((total, item) => {
-        return total + (Number(item.price) || 0) * (Number(item.quantity) || 1)
-      }, 0)
-
-      const order = await Order.create({
-        orderNumber: `AS-${Date.now()}`,
-        userId: user.id,
-        customerName: customerName || user.fullName || 'Customer',
-        customerEmail: customerEmail || user.email,
-        customerPhone: customerPhone || null,
-        shippingAddress: shippingAddress || null,
-        totalAmount,
-        status: 'pending',
-        trackingStage: 'received',
-        paymentStatus: 'paid',
-        receivedAt: DateTime.now(),
+      const order = await db.transaction(async (trx) => {
+        const lockedUser = await User.query({ client: trx })
+          .where('id', user.id)
+          .forUpdate()
+          .firstOrFail()
+        if (!lockedUser.isActive) fieldError('items', 'This account is inactive.')
+        if (idempotencyKey) {
+          const existing = await trx
+            .from('order_submissions')
+            .where({ user_id: user.id, submission_key: idempotencyKey })
+            .first()
+          if (existing) return Order.findOrFail(existing.order_id, { client: trx })
+        }
+        const delivery = await deliveryValidator.validate(
+          request.input('deliveryAddress') || lockedUser.deliveryAddress || {}
+        )
+        const shippingAddress = [
+          delivery.recipient,
+          delivery.address,
+          delivery.addressExtra,
+          delivery.city,
+          delivery.state,
+          delivery.postalCode,
+          delivery.country,
+        ]
+          .filter(Boolean)
+          .join('\n')
+        const ids = items.map((item) => Number(item.id || item.productId))
+        if (!ids.every((id) => Number.isSafeInteger(id) && id > 0))
+          fieldError('items', 'Choose valid products.')
+        const products = await Product.query({ client: trx })
+          .whereIn(
+            'id',
+            [...new Set(ids)].sort((a, b) => a - b)
+          )
+          .forUpdate()
+        const totals = new Map<number, number>()
+        for (const [index, item] of items.entries()) {
+          const quantity = Number(item.quantity)
+          if (!Number.isInteger(quantity) || quantity < 1 || quantity > 100)
+            fieldError('items', 'Choose quantities between 1 and 100.')
+          totals.set(ids[index], (totals.get(ids[index]) || 0) + quantity)
+        }
+        for (const [id, quantity] of totals) {
+          const product = products.find((p) => p.id === id)
+          if (!product || !product.isActive)
+            fieldError('items', 'One of the products is no longer available.')
+          if (product.stock < quantity)
+            fieldError('items', 'Not enough stock for ' + product.name + '.')
+        }
+        const total = items.reduce(
+          (sum, item, index) =>
+            sum + Number(products.find((p) => p.id === ids[index])!.price) * Number(item.quantity),
+          0
+        )
+        const order = await Order.create(
+          {
+            orderNumber: 'AS-' + randomUUID(),
+            userId: user.id,
+            customerName,
+            customerEmail,
+            customerPhone: delivery.phone,
+            shippingAddress,
+            totalAmount: Math.round(total * 100) / 100,
+            status: 'pending',
+            trackingStage: 'received',
+            paymentStatus: 'pending',
+            receivedAt: DateTime.now(),
+          },
+          { client: trx }
+        )
+        for (const [index, item] of items.entries()) {
+          const product = products.find((p) => p.id === ids[index])!
+          await OrderItem.create(
+            {
+              orderId: order.id,
+              productId: product.id,
+              productName: product.name,
+              quantity: Number(item.quantity),
+              price: Number(product.price),
+              size: String(item.selectedSize || item.size || '').slice(0, 100) || null,
+              color: String(item.color || '').slice(0, 100) || null,
+              tailorMeasurements: item.tailorMeasurements
+                ? JSON.stringify(item.tailorMeasurements).slice(0, 3000)
+                : null,
+              isCustomTailored: Boolean(item.isCustomTailored) && product.allowCustomTailoring,
+            },
+            { client: trx }
+          )
+        }
+        for (const product of products) {
+          product.stock -= totals.get(product.id) || 0
+          await product.save()
+        }
+        if (idempotencyKey)
+          await trx.table('order_submissions').insert({
+            user_id: user.id,
+            submission_key: idempotencyKey.slice(0, 100),
+            order_id: order.id,
+          })
+        await CartItem.query({ client: trx }).where('userId', user.id).delete()
+        await Activity.create(
+          {
+            userId: user.id,
+            type: 'order',
+            entityType: 'order',
+            entityId: order.id,
+            description: 'Placed order ' + order.orderNumber,
+          },
+          { client: trx }
+        )
+        return order
       })
-
-      for (const item of submittedItems) {
-        await OrderItem.create({
-          orderId: order.id,
-          productId: item.id || item.productId || null,
-          productName: item.name || item.productName || 'Product',
-          quantity: Number(item.quantity) || 1,
-          price: Number(item.price) || 0,
-          size: item.selectedSize || item.size || null,
-          color: item.color || null,
-          tailorMeasurements: item.tailorMeasurements || null,
-          isCustomTailored: !!item.isCustomTailored,
-        })
-      }
-
-      await CartItem.query().where('userId', user.id).delete()
-
-      const fullOrder = await Order.query()
-        .where('id', order.id)
-        .preload('items')
-        .firstOrFail()
-
-      return response.json({
-        success: true,
-        order: this.serializeOrder(fullOrder),
-        cart: [],
-      })
+      await order.load('items')
+      return response.json({ success: true, order: this.serializeOrder(order), cart: [] })
     } catch (error) {
-      console.error('Error creating order:', error)
-      return response.status(500).json({ error: 'Could not create order' })
+      if ((error as { code?: string }).code === 'E_VALIDATION_ERROR') throw error
+      console.error('Checkout failed', error)
+      return response.status(500).json({ error: 'The order could not be saved. Please try again.' })
     }
   }
 
@@ -505,16 +641,17 @@ export default class GuestsController {
         shippedAt: order.shippedAt?.toFormat('yyyy-MM-dd HH:mm') || null,
         deliveredAt: order.deliveredAt?.toFormat('yyyy-MM-dd HH:mm') || null,
       },
-      items: order.items?.map((item) => ({
-        id: item.id,
-        productName: item.productName,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size,
-        color: item.color,
-        tailorMeasurements: item.tailorMeasurements,
-        isCustomTailored: item.isCustomTailored,
-      })) || [],
+      items:
+        order.items?.map((item) => ({
+          id: item.id,
+          productName: item.productName,
+          quantity: item.quantity,
+          price: item.price,
+          size: item.size,
+          color: item.color,
+          tailorMeasurements: item.tailorMeasurements,
+          isCustomTailored: item.isCustomTailored,
+        })) || [],
     }
   }
 }

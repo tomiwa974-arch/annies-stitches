@@ -1,9 +1,12 @@
-import { useForm } from '@inertiajs/react'
+import { useForm, usePage, router } from '@inertiajs/react'
+import { fittingDraft } from '../lib/fitting-draft'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { ImagePlus, X } from 'lucide-react'
 import EditorialLayout from './components/EditorialLayout'
 
 export default function Custom() {
+  const { auth } = usePage().props as { auth?: { user?: { id: number } } }
+  const [restored, setRestored] = useState(false)
   const [sent, setSent] = useState(false)
   const [referencePreview, setReferencePreview] = useState<string | null>(null)
   const referenceInput = useRef<HTMLInputElement>(null)
@@ -17,6 +20,16 @@ export default function Custom() {
     notes: '',
     referenceImage: null as File | null,
   })
+  useEffect(() => {
+    fittingDraft<typeof form.data>('read')
+      .then((draft) => {
+        if (draft) {
+          form.setData(draft)
+          setRestored(true)
+        }
+      })
+      .catch(() => {})
+  }, [])
   useEffect(() => {
     if (!form.data.referenceImage) {
       setReferencePreview(null)
@@ -32,13 +45,28 @@ export default function Custom() {
     month: '2-digit',
     day: '2-digit',
   }).format(new Date())
-  function submit(event: FormEvent) {
+  async function submit(event: FormEvent) {
     event.preventDefault()
+    if (!auth?.user) {
+      try {
+        await fittingDraft('save', form.data)
+        sessionStorage.setItem('redirectAfterLogin', '/custom#request-fitting')
+        router.visit('/login?redirect=/custom%23request-fitting')
+      } catch {
+        form.setError(
+          'notes',
+          'Your browser could not save this draft. Please allow site storage and try again.'
+        )
+      }
+      return
+    }
     form.post('/custom/bookings', {
       forceFormData: true,
       preserveScroll: true,
       onSuccess: () => {
         setSent(true)
+        setRestored(false)
+        fittingDraft('clear').catch(() => {})
         form.reset()
       },
     })
@@ -179,7 +207,13 @@ export default function Custom() {
             </button>
           </div>
         ) : (
-          <form onSubmit={submit} className="atelier-form">
+          <form id="request-fitting" onSubmit={submit} className="atelier-form">
+            {restored && (
+              <p role="status">
+                Your fitting details and reference image have been restored. Review them and send
+                your request when ready.
+              </p>
+            )}
             <div className="atelier-form-row">
               {(['name', 'email'] as const).map((key) => (
                 <label key={key}>

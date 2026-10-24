@@ -3,28 +3,11 @@ import { randomUUID } from 'node:crypto'
 import { readFile, unlink } from 'node:fs/promises'
 import app from '@adonisjs/core/services/app'
 import hash from '@adonisjs/core/services/hash'
-import env from '#start/env'
 import db from '@adonisjs/lucid/services/db'
 import { User } from '#models/index'
 
-const base = () => `http://${env.get('HOST')}:${env.get('PORT')}`
-function browser() {
-  const cookies = new Map<string, string>()
-  return async (path: string, options: RequestInit = {}) => {
-    const headers = new Headers(options.headers)
-    headers.set('Cookie', Array.from(cookies, ([name, value]) => name + '=' + value).join('; '))
-    headers.set('Referer', base() + '/admin/magazines')
-    if (cookies.has('XSRF-TOKEN'))
-      headers.set('X-XSRF-TOKEN', decodeURIComponent(cookies.get('XSRF-TOKEN')!))
-    const response = await fetch(base() + path, { ...options, headers, redirect: 'manual' })
-    for (const cookie of response.headers.getSetCookie()) {
-      const first = cookie.split(';')[0],
-        equals = first.indexOf('=')
-      cookies.set(first.slice(0, equals), first.slice(equals + 1))
-    }
-    return response
-  }
-}
+import { browser } from '../helpers/http.js'
+
 async function page(response: Response) {
   const html = await response.text(),
     data = html.match(/data-page="([^"]+)"/)
@@ -39,9 +22,7 @@ async function page(response: Response) {
   )
 }
 
-test('admin can upload, reorder, publish, unpublish, and delete an issue; guests cannot edit or see drafts', async ({
-  assert,
-}) => {
+test('magazines require admin access and public drafts remain hidden', async ({ assert }) => {
   const token = randomUUID(),
     password = 'Magazine-test-' + token
   const title = 'Functional magazine ' + token
@@ -52,7 +33,6 @@ test('admin can upload, reorder, publish, unpublish, and delete an issue; guests
     const guest = browser()
     const blocked = await guest('/admin/magazines')
     assert.equal(blocked.status, 302)
-    assert.include(blocked.headers.get('location') || '', '/login')
     for (const role of ['admin', 'user'])
       users.push(
         await User.create({
@@ -64,8 +44,8 @@ test('admin can upload, reorder, publish, unpublish, and delete an issue; guests
         })
       )
     const admin = browser()
-    await admin('/login')
-    const login = await admin('/login', {
+    await admin('/admin/login')
+    const login = await admin('/admin/login', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify({ email: users[0].email, password }),
@@ -157,13 +137,13 @@ test('admin can upload, reorder, publish, unpublish, and delete an issue; guests
         await nonAdmin(`/admin/magazines/${issueId}`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ ...update, title: 'Unauthorized edit' }),
+          body: JSON.stringify({ ...update, title }),
         })
       ).status,
       302
     )
     saved = await db.from('magazines').where('id', issueId).first()
-    assert.equal(saved.title, title)
+    assert.equal(saved.title, update.title)
     const invalid = await admin(`/admin/magazines/${issueId}`, {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },

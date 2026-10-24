@@ -4,6 +4,8 @@ import { readFile, unlink } from 'node:fs/promises'
 import app from '@adonisjs/core/services/app'
 import env from '#start/env'
 import db from '@adonisjs/lucid/services/db'
+import { User } from '#models/index'
+import hash from '@adonisjs/core/services/hash'
 
 test('fitting requests save optional reference images and reject invalid uploads', async ({
   assert,
@@ -25,6 +27,14 @@ test('fitting requests save optional reference images and reject invalid uploads
     return response
   }
   const email = 'fitting-' + randomUUID() + '@example.com'
+  const password = 'Fitting-test-' + randomUUID()
+  const user = await User.create({
+    email,
+    fullName: 'Fitting test',
+    password: await hash.make(password),
+    role: 'user',
+    isActive: true,
+  })
   function form() {
     const body = new FormData()
     for (const [key, value] of Object.entries({
@@ -40,9 +50,19 @@ test('fitting requests save optional reference images and reject invalid uploads
   }
   try {
     await visit('/custom')
+    const blocked = await visit('/custom/bookings', { method: 'POST', body: form() })
+    assert.equal(blocked.status, 302)
+    assert.include(blocked.headers.get('Location') || '', '/login')
+    assert.isNull(await db.from('fitting_requests').where('email', email).first())
+    await visit('/login', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ email, password }),
+    })
     assert.equal((await visit('/custom/bookings', { method: 'POST', body: form() })).status, 302)
     const basic = await db.from('fitting_requests').where('email', email).first()
     assert.isNotNull(basic)
+    assert.equal(basic.user_id, user.id)
     assert.isNull(basic.reference_image)
     const bytes = await readFile(app.publicPath('images/generated/evening.png'))
     const body = form()
@@ -83,6 +103,7 @@ test('fitting requests save optional reference images and reject invalid uploads
       .where('email', email)
       .whereNotNull('reference_image')
     await db.from('fitting_requests').where('email', email).delete()
+    await user.delete()
     await Promise.all(
       rows.map((row) =>
         unlink(app.makePath('storage/fitting-references', row.reference_image)).catch(() => {})

@@ -1,10 +1,24 @@
 import { DateTime } from 'luxon'
 import { BaseModel, column, belongsTo, hasMany } from '@adonisjs/lucid/orm'
 import type { BelongsTo, HasMany } from '@adonisjs/lucid/types/relations'
+import { DbRememberMeTokensProvider } from '@adonisjs/auth/session'
+
+function jsonValue(value: unknown) {
+  if (typeof value !== 'string') return value
+  try {
+    return JSON.parse(value)
+  } catch {
+    return value
+  }
+}
+function jsonStorage(value: unknown) {
+  return value == null ? null : typeof value === 'string' ? value : JSON.stringify(value)
+}
 
 // ==================== USER MODEL ====================
 export class User extends BaseModel {
   static table = 'users'
+  static rememberMeTokens = DbRememberMeTokensProvider.forModel(User)
 
   @column({ isPrimary: true })
   declare id: number
@@ -15,22 +29,36 @@ export class User extends BaseModel {
   @column()
   declare email: string
 
-  @column()
+  @column({ serializeAs: null })
   declare password: string
+
+  @column({
+    columnName: 'delivery_address',
+    serializeAs: null,
+    prepare: jsonStorage,
+    consume: jsonValue,
+  })
+  declare deliveryAddress: Record<string, string> | null
 
   @column()
   declare role: string
 
-  @column({ columnName: 'is_active' })
+  @column({ columnName: 'is_active', consume: Boolean })
   declare isActive: boolean
 
-  @column({ columnName: 'remember_me_token' })
+  @column.dateTime({ columnName: 'last_seen_at' })
+  declare lastSeenAt: DateTime | null
+
+  @column({ columnName: 'presence_online', consume: Boolean })
+  declare presenceOnline: boolean
+
+  @column({ columnName: 'remember_me_token', serializeAs: null })
   declare rememberMeToken: string | null
 
-  @column({ columnName: 'reset_token' })
+  @column({ columnName: 'reset_token', serializeAs: null })
   declare resetToken: string | null
 
-  @column({ columnName: 'reset_token_expiry' })
+  @column({ columnName: 'reset_token_expiry', serializeAs: null })
   declare resetTokenExpiry: DateTime | null
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
@@ -56,7 +84,7 @@ export class StoreCategory extends BaseModel {
   @column()
   declare order: number
 
-  @column({ columnName: 'is_active' })
+  @column({ columnName: 'is_active', consume: Boolean })
   declare isActive: boolean
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
@@ -114,7 +142,7 @@ export class Category extends BaseModel {
   @column()
   declare order: number
 
-  @column({ columnName: 'is_active' })
+  @column({ columnName: 'is_active', consume: Boolean })
   declare isActive: boolean
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
@@ -152,10 +180,10 @@ export class CartItem extends BaseModel {
   @column()
   declare color: string | null
 
-  @column({ columnName: 'tailor_measurements' })
+  @column({ columnName: 'tailor_measurements', prepare: jsonStorage, consume: jsonValue })
   declare tailorMeasurements: any | null
 
-  @column({ columnName: 'is_custom_tailored' })
+  @column({ columnName: 'is_custom_tailored', consume: Boolean })
   declare isCustomTailored: boolean
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
@@ -225,7 +253,7 @@ export class Work extends BaseModel {
   @column({ columnName: 'is_featured' })
   declare isFeatured: boolean
 
-  @column({ columnName: 'is_active' })
+  @column({ columnName: 'is_active', consume: Boolean })
   declare isActive: boolean
 
   @column({ columnName: 'sort_order' })
@@ -269,19 +297,19 @@ export class Product extends BaseModel {
   @column()
   declare stock: number
 
-  @column({ columnName: 'is_active' })
+  @column({ columnName: 'is_active', consume: Boolean })
   declare isActive: boolean
 
   @column({ columnName: 'store_category' })
   declare storeCategory: string | null
 
-  @column({ columnName: 'color_variations' })
+  @column({ columnName: 'color_variations', prepare: jsonStorage, consume: jsonValue })
   declare colorVariations: any | null
 
-  @column({ columnName: 'tailor_measurements' })
+  @column({ columnName: 'tailor_measurements', prepare: jsonStorage, consume: jsonValue })
   declare tailorMeasurements: any | null
 
-  @column({ columnName: 'allow_custom_tailoring' })
+  @column({ columnName: 'allow_custom_tailoring', consume: Boolean })
   declare allowCustomTailoring: boolean
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })
@@ -390,10 +418,10 @@ export class OrderItem extends BaseModel {
   @column()
   declare color: string | null
 
-  @column({ columnName: 'tailor_measurements' })
+  @column({ columnName: 'tailor_measurements', prepare: jsonStorage, consume: jsonValue })
   declare tailorMeasurements: any | null
 
-  @column({ columnName: 'is_custom_tailored' })
+  @column({ columnName: 'is_custom_tailored', consume: Boolean })
   declare isCustomTailored: boolean
 
   @column.dateTime({ autoCreate: true, columnName: 'created_at' })

@@ -1,0 +1,89 @@
+{
+  "mode": "built-in imagegen",
+  "images": [
+    {
+      "product": "Burgundy Draped Evening Gown",
+      "view": "side",
+      "file": "public/images/generated/product-views/evening-side.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Burgundy Draped Evening Gown. Requested viewpoint: full-length 90-degree SIDE profile view, show side silhouette and tailoring clearly. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Burgundy Draped Evening Gown",
+      "view": "back",
+      "file": "public/images/generated/product-views/evening-back.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Burgundy Draped Evening Gown. Requested viewpoint: full-length REAR three-quarter view, model turned away so back construction and fabric drape are clearly visible; plausible restrained back construction matching the front design. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Ivory Corset Midi Dress",
+      "view": "side",
+      "file": "public/images/generated/product-views/corset-side.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Ivory Corset Midi Dress. Requested viewpoint: full-length 90-degree SIDE profile view, show side silhouette and tailoring clearly. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Ivory Corset Midi Dress",
+      "view": "back",
+      "file": "public/images/generated/product-views/corset-back.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Ivory Corset Midi Dress. Requested viewpoint: full-length REAR three-quarter view, model turned away so back construction and fabric drape are clearly visible; plausible restrained back construction matching the front design. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Emerald Aso-Ebi Occasion Wear",
+      "view": "side",
+      "file": "public/images/generated/product-views/asoebi-side.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Focus exclusively on the taller woman on the LEFT and her exact emerald-and-gold gown, both sculptural puff sleeves, and matching gele. Only that one woman. Product: Emerald Aso-Ebi Occasion Wear. Requested viewpoint: full-length 90-degree SIDE profile view, show side silhouette and tailoring clearly. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Emerald Aso-Ebi Occasion Wear",
+      "view": "back",
+      "file": "public/images/generated/product-views/asoebi-back.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Focus exclusively on the taller woman on the LEFT and her exact emerald-and-gold gown, both sculptural puff sleeves, and matching gele. Only that one woman. Product: Emerald Aso-Ebi Occasion Wear. Requested viewpoint: full-length REAR three-quarter view, model turned away so back construction and fabric drape are clearly visible; plausible restrained back construction matching the front design. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Ivory Senator Set",
+      "view": "side",
+      "file": "public/images/generated/product-views/menswear-side.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Ivory Senator Set. Requested viewpoint: full-length 90-degree SIDE profile view, show side silhouette and tailoring clearly. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Ivory Senator Set",
+      "view": "back",
+      "file": "public/images/generated/product-views/menswear-back.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Ivory Senator Set. Requested viewpoint: full-length REAR three-quarter view, model turned away so back construction and fabric drape are clearly visible; plausible restrained back construction matching the front design. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Ivory Lace Bridal Gown",
+      "view": "side",
+      "file": "public/images/generated/product-views/bridal-side.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Ivory Lace Bridal Gown. Requested viewpoint: full-length 90-degree SIDE profile view, show side silhouette and tailoring clearly. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Ivory Lace Bridal Gown",
+      "view": "back",
+      "file": "public/images/generated/product-views/bridal-back.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Ivory Lace Bridal Gown. Requested viewpoint: full-length REAR three-quarter view, model turned away so back construction and fabric drape are clearly visible; plausible restrained back construction matching the front design. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Rust Tailored Trouser Suit",
+      "view": "side",
+      "file": "public/images/generated/product-views/custom-side.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Focus exclusively on the woman on the LEFT wearing the rust suit, bustier, high-waisted trousers and matching blazer. Only that one woman, omit the man. Product: Rust Tailored Trouser Suit. Requested viewpoint: full-length 90-degree SIDE profile view, show side silhouette and tailoring clearly. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Rust Tailored Trouser Suit",
+      "view": "back",
+      "file": "public/images/generated/product-views/custom-back.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Focus exclusively on the woman on the LEFT wearing the rust suit, bustier, high-waisted trousers and matching blazer. Only that one woman, omit the man. Product: Rust Tailored Trouser Suit. Requested viewpoint: full-length REAR three-quarter view, model turned away so back construction and fabric drape are clearly visible; plausible restrained back construction matching the front design. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Chocolate Tailored Suit",
+      "view": "side",
+      "file": "public/images/generated/product-views/suit-side.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Chocolate Tailored Suit. Requested viewpoint: full-length 90-degree SIDE profile view, show side silhouette and tailoring clearly. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    },
+    {
+      "product": "Chocolate Tailored Suit",
+      "view": "back",
+      "file": "public/images/generated/product-views/suit-back.png",
+      "prompt": "Use case: product-mockup. Create a single photorealistic luxury fashion catalogue photograph, vertical 2:3. The attached image is the garment and model identity reference. Preserve the exact garment colour, fabric, seams, fit, neckline, sleeve construction and model identity; same warm limestone atelier, soft daylight and editorial grading. No text, watermark, collage, extra garments or people. Show an alternate camera viewpoint, not a crop of the reference. Product: Chocolate Tailored Suit. Requested viewpoint: full-length REAR three-quarter view, model turned away so back construction and fabric drape are clearly visible; plausible restrained back construction matching the front design. Shoes and full garment hem visible, portrait frame, the same clothes at the same shoot."
+    }
+  ]
+}

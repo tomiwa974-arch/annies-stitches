@@ -1,6 +1,6 @@
 # Magazine publishing
 
-Open **Admin → Magazines** (`/admin/magazines`) using an admin account.
+Open **Admin â†’ Magazines** (`/admin/magazines`) to manage issues.
 
 1. Choose **New magazine**, enter its title, issue label and description, and upload a cover. When no cover is selected, the first page image is used.
 2. Add inside pages. The stored cover is separate; reading starts on the first inside page. Choose writing on cream paper, image with caption, image plus writing, or writing on a wine background.
@@ -12,7 +12,7 @@ The public reading room at `/magazine` shows every issue as an open, centered pr
 
 Published issues also have direct URLs at `/magazine/:id`. Drafts return 404 publicly. There is no fixed magazine count. Each issue supports up to 200 inside pages in one save.
 
-Data lives in `magazines` and `magazine_pages`; saves replace the ordered pages in a transaction. Admin mutations require the existing admin middleware, retain CSRF protection, and validate content and uploads. `resources/default-magazines.json` preserves the original edit and supplies a second Occasion Issue using the previously generated fashion assets. `scripts/install-magazine-library.cjs` adds these defaults once and skips existing issues.
+Data lives in `magazines` and `magazine_pages`; saves replace the ordered pages in a transaction. Magazine administration uses the shared dashboard layout and requires an active authenticated administrator. Mutations retain CSRF protection and validate content and uploads. `resources/default-magazines.json` preserves the original edit and supplies a second Occasion Issue using the previously generated fashion assets. `scripts/install-magazine-library.cjs` adds these defaults once and skips existing issues.
 
 Validation includes unit tests for input rules, draft filtering, page order, transactional rollback, and cascading deletion, plus an HTTP integration test covering admin/non-admin access, two-image upload, publishing, validation feedback, unpublishing, and deletion. Tests clean up their own fixtures and uploaded images.
 

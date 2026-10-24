@@ -1,8 +1,10 @@
 import { useEffect, useState, type FormEvent } from 'react'
-import { Head, Link, router, useForm } from '@inertiajs/react'
+import { router, useForm } from '@inertiajs/react'
 import { ArrowDown, ArrowUp, BookOpen, Plus, Trash2 } from 'lucide-react'
 import MagazineFullscreen from '../../components/MagazineFullscreen'
 import type { MagazineData, MagazinePageData, MagazineLayout } from '../../../../shared/magazine'
+
+import '../../../css/admin-atelier.css'
 
 type EditablePage = MagazinePageData & { key: string; file: File | null }
 function pageKey() {
@@ -132,33 +134,8 @@ export default function AdminMagazines({ magazines }: { magazines: MagazineData[
       })
   }
   return (
-    <div className="magazine-admin">
-      <Head title="Magazines | Admin" />
-      <aside className="magazine-admin-sidebar">
-        <Link href="/admin" className="magazine-admin-brand">
-          annie's<span>STUDIO ADMIN</span>
-        </Link>
-        <nav aria-label="Admin navigation">
-          {[
-            ['Dashboard', '/admin'],
-            ['Collections', '/admin/collections'],
-            ['Works', '/admin/works'],
-            ['Store', '/admin/store'],
-            ['Magazines', '/admin/magazines'],
-            ['Orders', '/admin/orders'],
-          ].map(([label, href]) => (
-            <Link
-              key={href}
-              href={href}
-              aria-current={href === '/admin/magazines' ? 'page' : undefined}
-            >
-              {label}
-            </Link>
-          ))}
-        </nav>
-        <Link href="/magazine">View reading room ↗</Link>
-      </aside>
-      <main className="magazine-admin-main">
+    <div className="magazine-admin admin-magazine-atelier magazine-admin-embedded">
+      <section className="magazine-admin-panel">
         <header className="magazine-admin-heading">
           <div>
             <p>THE READING ROOM / PUBLISHING</p>
@@ -469,7 +446,7 @@ export default function AdminMagazines({ magazines }: { magazines: MagazineData[
             </fieldset>
           </form>
         )}
-      </main>
+      </section>
       {preview && <MagazineFullscreen issue={preview} onClose={() => setPreview(null)} />}
     </div>
   )

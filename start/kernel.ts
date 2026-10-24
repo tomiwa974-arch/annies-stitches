@@ -35,9 +35,9 @@ server.use([
  */
 router.use([
   () => import('@adonisjs/core/bodyparser_middleware'),
-  () => import('@adonisjs/session/session_middleware'),
-  () => import('@adonisjs/shield/shield_middleware'),
-  () => import('@adonisjs/auth/initialize_auth_middleware')
+  () => import('#middleware/scoped_session_middleware'),
+  () => import('#middleware/scoped_shield_middleware'),
+  () => import('#middleware/scoped_auth_middleware'),
 ])
 
 /**
@@ -47,5 +47,5 @@ router.use([
 export const middleware = router.named({
   auth: () => import('#middleware/auth_middleware'),
   admin: () => import('#middleware/admin_middleware'),
-  authOptional: () => import('#middleware/auth_optional_middleware')
+  authOptional: () => import('#middleware/auth_optional_middleware'),
 })

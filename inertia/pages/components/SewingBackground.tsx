@@ -1,4 +1,4 @@
-import React, { useMemo } from 'react'
+import { useMemo } from 'react'
 import { motion } from 'framer-motion'
 // Tiny SVG paths for sewing equipment (drawn in a ~12x12 viewBox)
 const SEWING_ICONS = [

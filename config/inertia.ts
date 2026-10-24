@@ -13,27 +13,28 @@ const inertiaConfig = defineConfig({
    * Data that should be shared with all rendered pages
    */
   sharedData: {
-    auth: (ctx: HttpContext) => ctx.inertia.always(async () => {
-      try {
-        await ctx.auth.check()
-        const user = ctx.auth.user as User | undefined
+    auth: (ctx: HttpContext) =>
+      ctx.inertia.always(async () => {
+        try {
+          await ctx.auth.check()
+          const user = ctx.auth.user as User | undefined
 
-        return {
-          user: user
-            ? {
-                id: user.id,
-                fullName: user.fullName,
-                email: user.email,
-                role: user.role,
-                isActive: user.isActive,
-                createdAt: user.createdAt,
-              }
-            : null,
+          return {
+            user: user?.isActive
+              ? {
+                  id: user.id,
+                  fullName: user.fullName,
+                  email: user.email,
+                  role: user.role,
+                  isActive: user.isActive,
+                  createdAt: user.createdAt,
+                }
+              : null,
+          }
+        } catch {
+          return { user: null }
         }
-      } catch {
-        return { user: null }
-      }
-    }),
+      }),
   },
 
   /**
@@ -41,8 +42,8 @@ const inertiaConfig = defineConfig({
    */
   ssr: {
     enabled: false,
-    entrypoint: 'inertia/app/ssr.tsx'
-  }
+    entrypoint: 'inertia/app/ssr.tsx',
+  },
 })
 
 export default inertiaConfig

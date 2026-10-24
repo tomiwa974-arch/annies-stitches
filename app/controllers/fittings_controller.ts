@@ -7,7 +7,7 @@ import { randomUUID } from 'node:crypto'
 import { mkdir, unlink } from 'node:fs/promises'
 
 export default class FittingsController {
-  async store({ request, response, session }: HttpContext) {
+  async store({ request, response, session, auth }: HttpContext) {
     const data = await request.validateUsing(fittingValidator())
     const image = request.file('referenceImage', {
       size: '8mb',
@@ -33,6 +33,7 @@ export default class FittingsController {
         savedImage = name
       }
       await db.table('fitting_requests').insert({
+        user_id: auth.user!.id,
         name: data.name,
         email: data.email,
         phone: data.phone,

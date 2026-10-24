@@ -4,6 +4,7 @@ import db from '@adonisjs/lucid/services/db'
 import { randomUUID } from 'node:crypto'
 import { mkdir, unlink } from 'node:fs/promises'
 import { listMagazines, saveMagazine } from '#services/magazines'
+import { adminData } from '#services/admin_data'
 import { magazineValidator } from '#validators/magazine'
 import type { MagazineData } from '../../shared/magazine.js'
 
@@ -18,7 +19,8 @@ export default class MagazinesController {
     return inertia.render('magazine', { magazines, selectedId })
   }
   async admin({ inertia }: HttpContext) {
-    return inertia.render('dashboard/admin/magazines', { magazines: await listMagazines(false) })
+    const [data, magazines] = await Promise.all([adminData(), listMagazines(false)])
+    return inertia.render('dashboard/admin/index', { ...data, activeTab: 'magazines', magazines })
   }
   async save({ request, response, session, params }: HttpContext) {
     const id = params.id ? Number(params.id) : undefined

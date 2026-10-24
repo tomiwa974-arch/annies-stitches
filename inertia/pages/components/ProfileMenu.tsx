@@ -1,30 +1,69 @@
+import DeliveryFields, { emptyDelivery, type DeliveryAddress } from './DeliveryFields'
 import { useEffect, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Link, router, usePage } from '@inertiajs/react'
-import { UserRound, Bell, Settings, LogOut, X } from 'lucide-react'
+import { api, ApiError } from '../../lib/api'
+import { mergeGuestShopping } from '../../lib/guest-shopping'
+import type { FormEvent } from 'react'
+import { UserRound, Bell, LogOut, X } from 'lucide-react'
 
 interface AccountUser {
+  id?: number
+  role?: string
   fullName?: string
   name?: string
   email?: string
   createdAt?: string
 }
 
-type Panel = 'My Profile' | 'Notifications' | 'Settings'
+type Panel = 'My Profile' | 'Notifications'
 
 export default function ProfileMenu() {
   const { props, url } = usePage()
-  const user = (props.auth as { user?: AccountUser } | undefined)?.user
+  const adminScope = url.split('?')[0].startsWith('/admin')
+  const accountUrl = adminScope ? '/admin/account' : '/api/account'
+  const sharedUser = (props.auth as { user?: AccountUser } | undefined)?.user
+  const [account, setAccount] = useState<{
+    user: AccountUser
+    deliveryAddress: DeliveryAddress | null
+    notifications: { id: string; title: string; body: string; date: string; href: string }[]
+  } | null>(null)
+  const user = account?.user || sharedUser
+  const [loading, setLoading] = useState(false)
+  const [saving, setSaving] = useState(false)
+  const [notice, setNotice] = useState('')
+  const [failure, setFailure] = useState('')
+  const [fields, setFields] = useState<Record<string, string>>({})
+  const [delivery, setDelivery] = useState<DeliveryAddress>(emptyDelivery)
   const [open, setOpen] = useState(false)
   const [panel, setPanel] = useState<Panel | null>(null)
   const menuRef = useRef<HTMLDivElement>(null)
   const buttonRef = useRef<HTMLButtonElement>(null)
   const dialogRef = useRef<HTMLDialogElement>(null)
+  useEffect(() => {
+    if (sharedUser?.id && !adminScope) mergeGuestShopping(sharedUser.id).catch(() => {})
+  }, [sharedUser?.id])
+
+  useEffect(() => {
+    if (!sharedUser?.id) return
+    const heartbeat = () => {
+      if (document.visibilityState === 'visible')
+        api(accountUrl + '/presence', 'POST').catch(() => {})
+    }
+    heartbeat()
+    const timer = window.setInterval(heartbeat, 60_000)
+    document.addEventListener('visibilitychange', heartbeat)
+    return () => {
+      window.clearInterval(timer)
+      document.removeEventListener('visibilitychange', heartbeat)
+    }
+  }, [sharedUser?.id])
 
   useEffect(() => {
     setOpen(false)
     setPanel(null)
-  }, [url, user?.email])
+    setAccount(null)
+  }, [url, sharedUser?.id])
 
   useEffect(() => {
     if (!open) return
@@ -56,11 +95,49 @@ export default function ProfileMenu() {
       dialog.close()
       document.body.style.overflow = previousOverflow
     }
-  }, [panel, user])
+  }, [panel, sharedUser?.id])
 
   function showPanel(next: Panel) {
     setOpen(false)
     setPanel(next)
+    setNotice('')
+    setFailure('')
+    setFields({})
+    setLoading(true)
+    api<NonNullable<typeof account>>(accountUrl)
+      .then((result) => {
+        setAccount(result)
+        setDelivery({
+          ...emptyDelivery,
+          recipient: result.user.fullName || '',
+          ...result.deliveryAddress,
+        })
+      })
+      .catch((error) => setFailure(error.message))
+      .finally(() => setLoading(false))
+  }
+  async function saveDelivery(event: FormEvent) {
+    event.preventDefault()
+    setSaving(true)
+    setFailure('')
+    setFields({})
+    setNotice('')
+    try {
+      const result = await api<{ deliveryAddress: DeliveryAddress; message: string }>(
+        accountUrl + '/delivery',
+        'PUT',
+        delivery
+      )
+      setDelivery({ ...emptyDelivery, ...result.deliveryAddress })
+      setNotice(result.message)
+    } catch (error) {
+      if (error instanceof ApiError) {
+        setFields(error.fields)
+        setFailure(Object.keys(error.fields).length ? '' : error.message)
+      } else setFailure('The account could not be updated.')
+    } finally {
+      setSaving(false)
+    }
   }
   function closePanel() {
     setPanel(null)
@@ -69,7 +146,7 @@ export default function ProfileMenu() {
   function toggle() {
     if (!user) {
       sessionStorage.setItem('redirectAfterLogin', url)
-      router.visit('/login')
+      router.visit(adminScope ? '/admin/login' : '/login')
       return
     }
     setOpen((value) => !value)
@@ -110,15 +187,8 @@ export default function ProfileMenu() {
             >
               <Bell size={17} /> Notifications
             </button>
-            <button
-              type="button"
-              className="profile-menu-action"
-              onClick={() => showPanel('Settings')}
-            >
-              <Settings size={17} /> Settings
-            </button>
             <Link
-              href="/logout"
+              href={adminScope ? '/admin/logout' : '/logout'}
               method="post"
               as="button"
               className="profile-menu-action profile-signout"
@@ -164,6 +234,17 @@ export default function ProfileMenu() {
               </button>
             </div>
             <div className="profile-dialog-content">
+              {loading && <p role="status">Loading your account...</p>}
+              {failure && (
+                <p className="profile-error" role="alert">
+                  {failure}
+                </p>
+              )}
+              {notice && (
+                <p className="profile-notice" role="status">
+                  {notice}
+                </p>
+              )}
               {panel === 'My Profile' && (
                 <>
                   <div className="profile-avatar">
@@ -178,43 +259,40 @@ export default function ProfileMenu() {
                     <dt>Email address</dt>
                     <dd>{user.email || 'Not set'}</dd>
                   </dl>
-                  <button
-                    type="button"
-                    className="profile-panel-button"
-                    onClick={() => setPanel('Settings')}
-                  >
-                    Account settings
-                  </button>
+                  {!loading && (
+                    <form className="profile-settings-form" onSubmit={saveDelivery}>
+                      <h3>Delivery details</h3>
+                      <p>Saved for your next order. Update these details whenever you need.</p>
+                      <DeliveryFields
+                        value={delivery}
+                        onChange={setDelivery}
+                        errors={fields}
+                        disabled={saving}
+                      />
+                      <button className="profile-panel-button" disabled={saving}>
+                        {saving ? 'Saving...' : 'Save delivery details'}
+                      </button>
+                    </form>
+                  )}
                 </>
               )}
-              {panel === 'Notifications' && (
-                <>
-                  <Bell size={32} />
-                  <h3>No notifications yet</h3>
-                  <p>For your orders and delivery progress, open tracking in the store.</p>
-                  <Link href="/store" className="profile-panel-button" onClick={closePanel}>
-                    Go to store
-                  </Link>
-                </>
-              )}
-              {panel === 'Settings' && (
-                <>
-                  <h3>Account</h3>
-                  <dl>
-                    <dt>Email address</dt>
-                    <dd>{user.email || 'Not set'}</dd>
-                  </dl>
-                  <Link
-                    href="/forgot-password"
-                    className="profile-panel-button"
-                    onClick={closePanel}
-                  >
-                    Change password
-                  </Link>
-                  <p className="profile-settings-note">
-                    Use the password reset flow to update your password.
-                  </p>
-                </>
+              {panel === 'Notifications' && !loading && (
+                <div className="profile-updates">
+                  {!account?.notifications.length && (
+                    <>
+                      <Bell size={30} />
+                      <h3>No updates yet</h3>
+                      <p>Your order and fitting updates will appear here.</p>
+                    </>
+                  )}
+                  {account?.notifications.map((item) => (
+                    <Link key={item.id} href={item.href} onClick={closePanel}>
+                      <strong>{item.title}</strong>
+                      <span>{item.body}</span>
+                      <small>{item.date ? new Date(item.date).toLocaleString() : ''}</small>
+                    </Link>
+                  ))}
+                </div>
               )}
             </div>
           </dialog>,

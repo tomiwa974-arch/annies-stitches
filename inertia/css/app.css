@@ -220,6 +220,59 @@
   margin-top: 16px;
   font-size: 12px;
 }
+.profile-settings-form {
+  display: grid;
+  gap: 16px;
+}
+.profile-settings-form label {
+  display: grid;
+  gap: 6px;
+  font-size: 12px;
+}
+.profile-settings-form input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid #80617050;
+  border-radius: 5px;
+  padding: 10px 12px;
+  background: #fffdf8;
+  color: #422c36;
+  font: inherit;
+}
+.profile-settings-form input:focus {
+  outline: 2px solid #b7859980;
+  outline-offset: 1px;
+}
+.profile-error {
+  color: #a24a60 !important;
+  font-size: 12px;
+}
+.profile-notice {
+  background: #6f806518;
+  color: #456a52 !important;
+  padding: 12px;
+  border-radius: 5px;
+}
+.profile-updates {
+  display: grid;
+  gap: 14px;
+}
+.profile-updates > a {
+  display: grid;
+  gap: 5px;
+  padding: 14px;
+  border: 1px solid #80617030;
+  border-radius: 5px;
+  color: #422c36;
+}
+.profile-updates span {
+  font-size: 12px;
+  color: #826e75;
+}
+.profile-updates small {
+  font-size: 10px;
+  color: #826e75;
+}
 .public-navigation-pill {
   display: inline-flex;
   align-items: center;
@@ -4260,3 +4313,15 @@ body {
     font-size: 9px;
   }
 }
+
+.delivery-fields { display:grid; gap:16px; text-align:left; }
+.delivery-fields label { display:grid; gap:7px; font-size:13px; }
+.delivery-fields input { width:100%; min-width:0; border:1px solid #b7c5ba; background:#fcfaf5; color:#263e35; padding:12px 14px; border-radius:8px; font:inherit; }
+.delivery-fields input:focus { outline:2px solid #698a78; outline-offset:2px; }
+.delivery-checkout { margin:auto; width:min(620px, calc(100vw - 32px)); max-height:90dvh; overflow-y:auto; border:1px solid #b7c5ba; border-radius:14px; padding:24px; background:#f5f3ea; color:#263e35; box-shadow:0 24px 100px #0006; }
+.delivery-checkout::backdrop { background:#15271f99; }
+.delivery-checkout h2 { font-family:Georgia,serif; font-size:28px; margin-bottom:8px; }
+.delivery-actions { display:flex; gap:12px; flex-wrap:wrap; margin-top:24px; }
+.delivery-actions button { border:1px solid #486454; border-radius:8px; padding:12px 16px; }
+.delivery-actions button[type=submit] { background:#294638; color:#fffdf4; }
+.delivery-actions button:disabled { opacity:.5; cursor:wait; }

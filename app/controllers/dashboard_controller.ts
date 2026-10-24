@@ -1,932 +1,579 @@
 import type { HttpContext } from '@adonisjs/core/http'
-import { 
-  Category, 
-  Work, 
-  Product, 
-  ProductImage,
-  Order, 
-  Activity, 
-  StoreCategory,
-  Collection, 
-  User 
-} from '#models/index'
+import type { TransactionClientContract } from '@adonisjs/lucid/types/database'
+import db from '@adonisjs/lucid/services/db'
 import app from '@adonisjs/core/services/app'
 import { DateTime } from 'luxon'
+import {
+  Category,
+  Work,
+  Product,
+  ProductImage,
+  StoreCategory,
+  Collection,
+  Order,
+  User,
+  Activity,
+} from '#models/index'
+import { adminData, orderData } from '#services/admin_data'
+import { AdminUploads, fieldError } from '#services/admin_uploads'
+import {
+  categoryValidator,
+  storeCategoryValidator,
+  workValidator,
+  productValidator,
+  collectionValidator,
+  orderValidator,
+  userStatusValidator,
+  fittingStatusValidator,
+} from '#validators/admin'
 
 export default class DashboardController {
-  private parseJsonField(value: any, fallback: any) {
-    if (!value) return fallback
-    if (typeof value !== 'string') return value
+  private async page(ctx: HttpContext, activeTab: string) {
+    return ctx.inertia.render('dashboard/admin/index', { ...(await adminData()), activeTab })
+  }
+  index(ctx: HttpContext) {
+    return this.page(ctx, 'dashboard')
+  }
+  collections(ctx: HttpContext) {
+    return this.page(ctx, 'collections')
+  }
+  works(ctx: HttpContext) {
+    return this.page(ctx, 'works')
+  }
+  store(ctx: HttpContext) {
+    return this.page(ctx, 'store')
+  }
+  orders(ctx: HttpContext) {
+    return this.page(ctx, 'orders')
+  }
+  activity(ctx: HttpContext) {
+    return this.page(ctx, 'activity')
+  }
+  users(ctx: HttpContext) {
+    return this.page(ctx, 'users')
+  }
+  fittings(ctx: HttpContext) {
+    return this.page(ctx, 'fittings')
+  }
+
+  private async mutate(
+    ctx: HttpContext,
+    action: (uploads: AdminUploads, trx: TransactionClientContract) => Promise<void>
+  ) {
+    const uploads = new AdminUploads()
     try {
-      return JSON.parse(value)
-    } catch {
-      return fallback
-    }
-  }
-
-  private stringifyJsonField(value: any, fallback: any) {
-    return JSON.stringify(this.parseJsonField(value, fallback))
-  }
-
-  private errorMessage(error: unknown) {
-    return error instanceof Error ? error.message : 'Unknown error'
-  }
-
-  // Main dashboard page - loads everything
-  async index({ inertia }: HttpContext) {
-    try {
-    const categories = await Category.query().orderBy('order')
-    const works = await Work.query()
-      .preload('category')
-      .orderBy('createdAt', 'desc')
-    const products = await Product.query()
-      .preload('images')
-      .orderBy('createdAt', 'desc')
-    const orders = await Order.query()
-      .preload('user', (userQuery) => {
-        userQuery.select(['id', 'fullName', 'email'])
-      })
-      .preload('items', (itemsQuery) => {
-        itemsQuery.preload('product')
-      })
-      .orderBy('createdAt', 'desc')
-      .limit(50)
-    const activities = await Activity.query()
-      .orderBy('createdAt', 'desc')
-      .limit(100)
-    
-    const collection = await Collection.first()
-    
-    const storeCategories = await StoreCategory.query()
-      .where('isActive', true)
-      .orderBy('order')
-    
-    const categoriesCount = await Category.query().count('* as total')
-    const worksCount = await Work.query().count('* as total')
-    const productsCount = await Product.query().count('* as total')
-    const ordersCount = await Order.query().count('* as total')
-    const usersCount = await User.query().count('* as total')
-    
-    const totalRevenue = await Order.query().sum('total_amount as sum')
-    const pendingOrders = await Order.query().where('status', 'pending').count('* as total')
-    const completedOrders = await Order.query().where('status', 'delivered').count('* as total')
-    
-    const totalWishlists = await Activity.query()
-      .where('type', 'wishlist')
-      .count('* as total')
-    const totalCartAdds = await Activity.query()
-      .where('type', 'cart')
-      .count('* as total')
-    const totalViews = await Activity.query()
-      .where('type', 'view')
-      .count('* as total')
-    
-    const popularProducts = await Activity.query()
-      .where('entityType', 'product')
-      .select('entityId')
-      .count('* as count')
-      .groupBy('entityId')
-      .orderBy('count', 'desc')
-      .limit(10)
-      .then(async (results) => {
-        const popularWithProducts = []
-        for (const r of results) {
-          const product = await Product.find(r.$extras.entityId || r.entityId)
-          if (product) {
-            popularWithProducts.push({
-              id: product.id,
-              title: product.name,
-              category: product.storeCategory || 'Uncategorized',
-              wishlist_count: Number(r.$extras.count)
-            })
-          }
-        }
-        return popularWithProducts
-      })
-    
-    const recentActivity = await Activity.query()
-      .orderBy('createdAt', 'desc')
-      .limit(10)
-      .then(activities => activities.map(a => ({
-        id: a.id,
-        action: a.description || `${a.type} activity`,
-        created_at: a.createdAt ? a.createdAt.toFormat('yyyy-MM-dd HH:mm') : 'Just now'
-      })))
-
-    const stats = {
-      totalProducts: Number(productsCount[0].$extras.total),
-      totalOrders: Number(ordersCount[0].$extras.total),
-      totalWorks: Number(worksCount[0].$extras.total),
-      totalCategories: Number(categoriesCount[0].$extras.total),
-      totalWishlists: Number(totalWishlists[0].$extras.total),
-      totalRevenue: Number(totalRevenue[0].$extras.sum || 0),
-      pendingOrders: Number(pendingOrders[0].$extras.total),
-      completedOrders: Number(completedOrders[0].$extras.total),
-      totalUsers: Number(usersCount[0].$extras.total),
-      totalCartAdds: Number(totalCartAdds[0].$extras.total),
-      totalViews: Number(totalViews[0].$extras.total),
-      popularProducts
-    }
-
-    let collectionData = collection ? collection.toJSON() : {
-      id: 1,
-      title: "Annie's Stitches",
-      bio: '',
-      journeyText: '',
-      happyClients: 0,
-      yearsExperience: 0,
-      services: ['CUSTOM TAILORING', 'CORSET & STATEMENT DRESSES', 'READY-TO-WEAR', 'TRADITIONAL WEAR', 'MENS CASUAL WEAR', "MEN'S TRADITIONAL WEAR"]
-    }
-    
-    if (!collectionData.services || (typeof collectionData.services === 'string' && collectionData.services.length === 0)) {
-      collectionData.services = ['CUSTOM TAILORING', 'CORSET & STATEMENT DRESSES', 'READY-TO-WEAR', 'TRADITIONAL WEAR', 'MENS CASUAL WEAR', "MEN'S TRADITIONAL WEAR"]
-    }
-
-    return inertia.render('dashboard/admin/index', {
-      activeTab: 'dashboard',
-      categories: categories.map(c => c.toJSON()),
-      works: works.map(w => w.toJSON()),
-      products: products.map(p => p.toJSON()),
-      orders: orders.map(o => ({
-        id: o.id,
-        order_number: o.orderNumber,
-        customer_name: o.customerName,
-        total_amount: o.totalAmount,
-        status: o.status,
-        tracking_stage: o.trackingStage || 'received',
-        created_at: o.createdAt ? o.createdAt.toFormat('yyyy-MM-dd') : 'Unknown'
-      })),
-      activities: activities.map(a => a.toJSON()),
-      collection: collectionData,
-      stats,
-      recentActivity,
-      storeCategories: storeCategories.map(c => c.toJSON())
-    })
+      await ctx.auth.check()
+      await db.transaction((trx) => action(uploads, trx))
+      ctx.session.flash('success', 'Changes saved.')
+      return ctx.response.redirect().back()
     } catch (error) {
-      console.error('Error loading admin dashboard:', error)
-      return inertia.render('dashboard/admin/index', {
-        activeTab: 'dashboard',
-        categories: [],
-        works: [],
-        products: [],
-        orders: [],
-        activities: [],
-        collection: {
-          id: 0,
-          title: "Annie's Stitches",
-          bio: '',
-          journeyText: '',
-          happyClients: 0,
-          yearsExperience: 0,
-          services: ['CUSTOM TAILORING', 'READY-TO-WEAR'],
-        },
-        stats: {
-          totalProducts: 0,
-          totalOrders: 0,
-          totalWorks: 0,
-          totalCategories: 0,
-          totalWishlists: 0,
-          totalRevenue: 0,
-          pendingOrders: 0,
-          completedOrders: 0,
-          totalUsers: 0,
-          totalCartAdds: 0,
-          totalViews: 0,
-          popularProducts: [],
-        },
-        recentActivity: [],
-        storeCategories: [],
-        databaseError: 'Database is not connected',
-      })
+      await uploads.rollback()
+      if (
+        (error as { code?: string }).code === 'E_VALIDATION_ERROR' ||
+        (error as { status?: number }).status === 404
+      )
+        throw error
+      ctx.logger.error({ err: error }, 'Admin update failed')
+      ctx.session.flashErrors({ form: 'The changes could not be saved. Please try again.' })
+      return ctx.response.redirect().back()
     }
   }
-
-  // ============ COLLECTIONS / CATEGORIES ============
-  
-  async collections({ inertia }: HttpContext) {
-    const categories = await Category.query().orderBy('order')
-    const collection = await Collection.first()
-    
-    const pageContent = {
-      bio: collection?.bio || '',
-      middleInfo: collection?.journeyText || '',
-      worksTopText: 'Featured works',
-      worksBottomText: '',
-      storeTopText: 'Shop our collection'
-    }
-    
-    return inertia.render('dashboard/admin/index', { 
-      activeTab: 'collections',
-      categories: categories.map(c => c.toJSON()),
-      pageContent
+  private audit(
+    ctx: HttpContext,
+    trx: TransactionClientContract,
+    type: string,
+    entityType: string,
+    entityId: number,
+    description: string
+  ) {
+    return Activity.create(
+      {
+        userId: ctx.auth.user?.id || null,
+        type,
+        entityType,
+        entityId,
+        description,
+        ipAddress: ctx.request.ip(),
+      },
+      { client: trx }
+    )
+  }
+  private slug(value: string) {
+    return value
+      .trim()
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-|-$/g, '')
+  }
+  private async unique(
+    trx: TransactionClientContract,
+    table: string,
+    column: string,
+    value: string,
+    id?: number
+  ) {
+    const query = trx.from(table).where(column, value)
+    if (id) query.whereNot('id', id)
+    if (await query.first()) fieldError('name', 'An entry with this name or slug already exists.')
+  }
+  async storeCategory(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(categoryValidator)
+    return this.mutate(ctx, async (uploads, trx) => {
+      const slug = this.slug(data.name)
+      if (!slug) fieldError('name', 'Include a letter or number in the category name.')
+      await this.unique(trx, 'categories', 'slug', slug)
+      const count = await Category.query({ client: trx }).count('* as total')
+      const category = await Category.create(
+        {
+          ...data,
+          description: data.description || '',
+          slug,
+          order: Number(count[0].$extras.total),
+          isActive: true,
+          coverImage: await uploads.image(ctx, 'cover_image', 'categories'),
+        },
+        { client: trx }
+      )
+      await this.audit(
+        ctx,
+        trx,
+        'admin_create',
+        'category',
+        category.id,
+        `Created collection ${category.name}`
+      )
     })
   }
-
-  async storeCategory({ request, response }: HttpContext) {
-    try {
-      const { name, description } = request.all()
-      const existingCategories = await Category.query().count('* as total')
-      const order = Number(existingCategories[0].$extras.total)
-      
-      let coverImagePath = null
-      const coverImage = request.file('cover_image')
-      if (coverImage) {
-        const fileName = `${Date.now()}-${coverImage.clientName}`
-        await coverImage.move(app.makePath('public/uploads/categories'), {
-          name: fileName
-        })
-        coverImagePath = `/uploads/categories/${fileName}`
-      }
-      
-      await Category.create({
-        name: name,
-        slug: name.toLowerCase().replace(/\s+/g, '-'),
-        description: description,
-        order: order,
-        isActive: true,
-        coverImage: coverImagePath
-      })
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error creating category:', error)
-      return response.redirect().back()
-    }
-  }
-
-  async updateCategory({ params, request, response }: HttpContext) {
-    try {
-      const category = await Category.findOrFail(params.id)
-      
-      let name: string
-      let description: string
-      let coverImagePath = category.coverImage
-      
-      const coverImage = request.file('cover_image')
-      
-      if (coverImage) {
-        name = request.input('name')
-        description = request.input('description')
-        
-        const fileName = `${Date.now()}-${coverImage.clientName}`
-        await coverImage.move(app.makePath('public/uploads/categories'), {
-          name: fileName
-        })
-        coverImagePath = `/uploads/categories/${fileName}`
-      } else {
-        const data = request.all()
-        name = data.name
-        description = data.description
-      }
-      
+  async updateCategory(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(categoryValidator)
+    return this.mutate(ctx, async (uploads, trx) => {
+      const category = await Category.findOrFail(ctx.params.id, { client: trx })
       category.merge({
-        name: name,
-        slug: name.toLowerCase().replace(/\s+/g, '-'),
-        description: description,
-        coverImage: coverImagePath
+        name: data.name,
+        description: data.description || '',
+        coverImage: await uploads.image(ctx, 'cover_image', 'categories', category.coverImage),
       })
       await category.save()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error updating category:', error)
-      return response.redirect().back()
-    }
-  }
-
-  async deleteCategory({ params, response }: HttpContext) {
-    try {
-      const category = await Category.findOrFail(params.id)
-      await category.delete()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error deleting category:', error)
-      return response.redirect().back()
-    }
-  }
-
-  // ============ STORE CATEGORIES ============
-
-  async getStoreCategories({ response }: HttpContext) {
-    try {
-      const storeCategories = await StoreCategory.query()
-        .where('isActive', true)
-        .orderBy('order')
-      return response.json(storeCategories)
-    } catch (error) {
-      console.error('Error fetching store categories:', error)
-      return response.status(500).json({ error: 'Failed to fetch store categories' })
-    }
-  }
-
-  async storeStoreCategory({ request, response, session }: HttpContext) {
-    try {
-      const { name, slug } = request.all()
-      if (!name || !String(name).trim()) {
-        session.flash('errors', { form: 'Store category name is required.' })
-        return response.redirect().back()
-      }
-
-      const cleanName = String(name).trim()
-      const cleanSlug = String(slug || cleanName)
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-
-      const existingCount = await StoreCategory.query().count('* as total')
-      const order = Number(existingCount[0].$extras.total)
-      
-      await StoreCategory.create({
-        name: cleanName,
-        slug: cleanSlug,
-        order: order,
-        isActive: true
-      })
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error creating store category:', error)
-      session.flash('errors', { form: `Failed to create store category: ${this.errorMessage(error)}` })
-      return response.redirect().back()
-    }
-  }
-
-  async updateStoreCategory({ params, request, response, session }: HttpContext) {
-    try {
-      const storeCategory = await StoreCategory.findOrFail(params.id)
-      const { name, slug } = request.all()
-      if (!name || !String(name).trim()) {
-        session.flash('errors', { form: 'Store category name is required.' })
-        return response.redirect().back()
-      }
-      const cleanName = String(name).trim()
-      const cleanSlug = String(slug || cleanName)
-        .trim()
-        .toLowerCase()
-        .replace(/\s+/g, '-')
-      
-      storeCategory.merge({
-        name: cleanName,
-        slug: cleanSlug
-      })
-      await storeCategory.save()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error updating store category:', error)
-      session.flash('errors', { form: `Failed to update store category: ${this.errorMessage(error)}` })
-      return response.redirect().back()
-    }
-  }
-
-  async deleteStoreCategory({ params, response }: HttpContext) {
-    try {
-      const storeCategory = await StoreCategory.findOrFail(params.id)
-      await Product.query()
-        .where('store_category', storeCategory.name)
-        .update({ store_category: null })
-      await storeCategory.delete()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error deleting store category:', error)
-      return response.redirect().back()
-    }
-  }
-
-  // ============ UPDATE COLLECTION ============
-  
-  async updateCollection({ request, response }: HttpContext) {
-    try {
-      let collection = await Collection.first()
-      if (!collection) {
-        collection = new Collection()
-      }
-      
-      const { bio, journeyText } = request.all()
-      
-      collection.merge({
-        bio: bio || '',
-        journeyText: journeyText || ''
-      })
-      await collection.save()
-      
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error updating collection:', error)
-      return response.redirect().back()
-    }
-  }
-
-  // ============ WORKS ============
-  
-  async works({ inertia }: HttpContext) {
-    const works = await Work.query()
-      .preload('category')
-      .orderBy('createdAt', 'desc')
-    const categories = await Category.query().where('isActive', true)
-    
-    return inertia.render('dashboard/admin/index', { 
-      activeTab: 'works',
-      works: works.map(w => w.toJSON()),
-      categories: categories.map(c => c.toJSON())
+      await this.audit(
+        ctx,
+        trx,
+        'admin_update',
+        'category',
+        category.id,
+        `Updated collection ${category.name}`
+      )
     })
   }
-
-  async storeWork({ request, response }: HttpContext) {
-    try {
-      const { categoryId, title, description } = request.all()
-      
-      let imagePath = null
-      const image = request.file('imageUrl')
-      if (image) {
-        const fileName = `${Date.now()}-${image.clientName}`
-        await image.move(app.makePath('public/uploads/works'), {
-          name: fileName
-        })
-        imagePath = `/uploads/works/${fileName}`
-      }
-      
-      await Work.create({
-        categoryId: categoryId,
-        title: title,
-        description: description || '',
-        imageUrl: imagePath,
-        isActive: true
-      })
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error creating work:', error)
-      return response.redirect().back()
-    }
+  async deleteCategory(ctx: HttpContext) {
+    return this.mutate(ctx, async (_, trx) => {
+      const category = await Category.findOrFail(ctx.params.id, { client: trx })
+      await category.delete()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_delete',
+        'category',
+        category.id,
+        `Deleted collection ${category.name}`
+      )
+    })
   }
-
-  async updateWork({ params, request, response }: HttpContext) {
-    try {
-      const work = await Work.findOrFail(params.id)
-      const { categoryId, title, description } = request.all()
-      
-      let imagePath = work.imageUrl
-      const image = request.file('imageUrl')
-      if (image) {
-        const fileName = `${Date.now()}-${image.clientName}`
-        await image.move(app.makePath('public/uploads/works'), {
-          name: fileName
-        })
-        imagePath = `/uploads/works/${fileName}`
-      }
-      
+  async getStoreCategories({ response }: HttpContext) {
+    return response.json(await StoreCategory.query().where('isActive', true).orderBy('order'))
+  }
+  async storeStoreCategory(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(storeCategoryValidator)
+    return this.mutate(ctx, async (_, trx) => {
+      const slug = this.slug(data.slug || data.name)
+      if (!slug) fieldError('slug', 'Enter a valid category slug.')
+      await this.unique(trx, 'store_categories', 'slug', slug)
+      await this.unique(trx, 'store_categories', 'name', data.name)
+      const count = await StoreCategory.query({ client: trx }).count('* as total')
+      const category = await StoreCategory.create(
+        { name: data.name, slug, order: Number(count[0].$extras.total), isActive: true },
+        { client: trx }
+      )
+      await this.audit(
+        ctx,
+        trx,
+        'admin_create',
+        'store_category',
+        category.id,
+        `Created store category ${category.name}`
+      )
+    })
+  }
+  async updateStoreCategory(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(storeCategoryValidator)
+    return this.mutate(ctx, async (_, trx) => {
+      const category = await StoreCategory.findOrFail(ctx.params.id, { client: trx })
+      const slug = this.slug(data.slug || data.name)
+      if (!slug) fieldError('slug', 'Enter a valid category slug.')
+      await this.unique(trx, 'store_categories', 'slug', slug, category.id)
+      await this.unique(trx, 'store_categories', 'name', data.name, category.id)
+      await Product.query({ client: trx })
+        .where('storeCategory', category.name)
+        .update({ storeCategory: data.name })
+      category.merge({ name: data.name, slug })
+      await category.save()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_update',
+        'store_category',
+        category.id,
+        `Updated store category ${category.name}`
+      )
+    })
+  }
+  async deleteStoreCategory(ctx: HttpContext) {
+    return this.mutate(ctx, async (_, trx) => {
+      const category = await StoreCategory.findOrFail(ctx.params.id, { client: trx })
+      await Product.query({ client: trx })
+        .where('storeCategory', category.name)
+        .update({ storeCategory: null })
+      await category.delete()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_delete',
+        'store_category',
+        category.id,
+        `Deleted store category ${category.name}`
+      )
+    })
+  }
+  async updateCollection(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(collectionValidator)
+    return this.mutate(ctx, async (_, trx) => {
+      let collection = await Collection.query({ client: trx }).first()
+      if (!collection) collection = new Collection().useTransaction(trx)
+      collection.merge({ bio: data.bio || '', journeyText: data.journeyText || '' })
+      await collection.save()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_update',
+        'collection',
+        collection.id,
+        'Updated collection page content'
+      )
+    })
+  }
+  async storeWork(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(workValidator)
+    return this.mutate(ctx, async (uploads, trx) => {
+      if (!(await Category.find(data.categoryId, { client: trx })))
+        fieldError('categoryId', 'Choose an existing collection.')
+      const work = await Work.create(
+        {
+          ...data,
+          description: data.description || '',
+          isActive: true,
+          imageUrl: await uploads.image(ctx, 'imageUrl', 'works'),
+        },
+        { client: trx }
+      )
+      await this.audit(ctx, trx, 'admin_create', 'work', work.id, `Published work ${work.title}`)
+    })
+  }
+  async updateWork(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(workValidator)
+    return this.mutate(ctx, async (uploads, trx) => {
+      if (!(await Category.find(data.categoryId, { client: trx })))
+        fieldError('categoryId', 'Choose an existing collection.')
+      const work = await Work.findOrFail(ctx.params.id, { client: trx })
       work.merge({
-        categoryId: categoryId,
-        title: title,
-        description: description || '',
-        imageUrl: imagePath
+        ...data,
+        description: data.description || '',
+        imageUrl: await uploads.image(ctx, 'imageUrl', 'works', work.imageUrl),
       })
       await work.save()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error updating work:', error)
-      return response.redirect().back()
-    }
-  }
-
-  async deleteWork({ params, response }: HttpContext) {
-    try {
-      const work = await Work.findOrFail(params.id)
-      await work.delete()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error deleting work:', error)
-      return response.redirect().back()
-    }
-  }
-
-  // ============ STORE / PRODUCTS ============
-  
-  async store({ inertia }: HttpContext) {
-    try {
-    const products = await Product.query()
-      .preload('images')
-      .orderBy('createdAt', 'desc')
-    
-    const storeCategories = await StoreCategory.query()
-      .where('isActive', true)
-      .orderBy('order')
-    
-    return inertia.render('dashboard/admin/index', { 
-      activeTab: 'store',
-      products: products.map(p => p.toJSON()),
-      storeCategories: storeCategories.map(c => c.toJSON())
+      await this.audit(ctx, trx, 'admin_update', 'work', work.id, `Updated work ${work.title}`)
     })
-    } catch (error) {
-      console.error('Error loading admin store:', error)
-      return inertia.render('dashboard/admin/index', {
-        activeTab: 'store',
-        products: [],
-        storeCategories: [],
-        databaseError: 'Database is not connected',
-      })
+  }
+  async deleteWork(ctx: HttpContext) {
+    return this.mutate(ctx, async (_, trx) => {
+      const work = await Work.findOrFail(ctx.params.id, { client: trx })
+      await work.delete()
+      await this.audit(ctx, trx, 'admin_delete', 'work', work.id, `Deleted work ${work.title}`)
+    })
+  }
+  private jsonArray(ctx: HttpContext, field: string, fallback: unknown[]) {
+    const value = ctx.request.input(field)
+    if (value === undefined || value === null || value === '') return fallback
+    try {
+      const result = typeof value === 'string' ? JSON.parse(value) : value
+      if (!Array.isArray(result)) throw new Error()
+      if (
+        field === 'tailor_measurements' &&
+        !result.every((item) => typeof item === 'string' && item.length <= 80)
+      )
+        throw new Error()
+      if (
+        field === 'color_variations' &&
+        !result.every((item) => item && typeof item === 'object' && typeof item.name === 'string')
+      )
+        throw new Error()
+      return result
+    } catch {
+      fieldError(field, 'Enter a valid JSON list with the expected fields.')
     }
   }
-
-  async storeProduct({ request, response, session }: HttpContext) {
-    try {
-      const {
-        name,
-        description,
-        price,
-        size,
-        stock,
-        store_category,
-        color_variations,
-        tailor_measurements,
-        allow_custom_tailoring,
-      } = request.all()
-      if (!name || !String(name).trim()) {
-        session.flash('errors', { form: 'Product name is required.' })
-        return response.redirect().back()
-      }
-      if (price === undefined || price === null || String(price).trim() === '') {
-        session.flash('errors', { form: 'Product price is required.' })
-        return response.redirect().back()
-      }
-      
-      let imagePath = null
-      const image = request.file('imageUrl')
-      if (image) {
-        const fileName = `${Date.now()}-${image.clientName}`
-        await image.move(app.makePath('public/uploads/products'), {
-          name: fileName
-        })
-        imagePath = `/uploads/products/${fileName}`
-      }
-      
-      const product = await Product.create({
-        name: String(name).trim(),
-        description: description || '',
-        price: Number(price),
-        size: size || '',
-        stock: Number(stock || 0),
-        storeCategory: store_category || null,
-        imageUrl: imagePath,
-        colorVariations: this.stringifyJsonField(color_variations, []),
-        tailorMeasurements: this.stringifyJsonField(tailor_measurements, ['chest', 'waist', 'hips', 'length']),
-        allowCustomTailoring: allow_custom_tailoring !== 'false',
-        isActive: true
-      })
-      
-      const images = request.file('images')
-      if (images && Array.isArray(images)) {
-        for (let i = 0; i < images.length; i++) {
-          const img = images[i]
-          const fileName = `${Date.now()}-${i}-${img.clientName}`
-          await img.move(app.makePath('public/uploads/products'), { name: fileName })
-          await ProductImage.create({
-            productId: product.id,
-            imageUrl: `/uploads/products/${fileName}`,
-            sortOrder: i
-          })
-        }
-      }
-      
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error creating product:', error)
-      if (request.accepts(['json', 'html']) === 'json') {
-        return response.status(500).json({ error: 'Failed to create product', detail: this.errorMessage(error) })
-      }
-      session.flash('errors', { form: `Failed to create product: ${this.errorMessage(error)}` })
-      return response.redirect().back()
-    }
+  async storeProduct(ctx: HttpContext) {
+    return this.saveProduct(ctx)
   }
-
-  async updateProduct({ params, request, response, session }: HttpContext) {
-    try {
-      const product = await Product.findOrFail(params.id)
-      const {
-        name,
-        description,
-        price,
-        size,
-        stock,
-        store_category,
-        color_variations,
-        tailor_measurements,
-        allow_custom_tailoring,
-      } = request.all()
-      if (!name || !String(name).trim()) {
-        session.flash('errors', { form: 'Product name is required.' })
-        return response.redirect().back()
-      }
-      if (price === undefined || price === null || String(price).trim() === '') {
-        session.flash('errors', { form: 'Product price is required.' })
-        return response.redirect().back()
-      }
-      
-      let imagePath = product.imageUrl
-      const image = request.file('imageUrl')
-      if (image) {
-        const fileName = `${Date.now()}-${image.clientName}`
-        await image.move(app.makePath('public/uploads/products'), {
-          name: fileName
-        })
-        imagePath = `/uploads/products/${fileName}`
-      }
-      
+  async updateProduct(ctx: HttpContext) {
+    return this.saveProduct(ctx, true)
+  }
+  private async saveProduct(ctx: HttpContext, editing = false) {
+    const data = await ctx.request.validateUsing(productValidator)
+    const colors = this.jsonArray(ctx, 'color_variations', [])
+    const measurements = this.jsonArray(ctx, 'tailor_measurements', [])
+    return this.mutate(ctx, async (uploads, trx) => {
+      if (
+        data.store_category &&
+        !(await StoreCategory.query({ client: trx }).where('name', data.store_category).first())
+      )
+        fieldError('store_category', 'Choose an existing store category.')
+      const product = editing
+        ? await Product.findOrFail(ctx.params.id, { client: trx })
+        : new Product().useTransaction(trx)
       product.merge({
-        name: String(name).trim(),
-        description: description || '',
-        price: Number(price),
-        size: size || '',
-        stock: Number(stock || 0),
-        storeCategory: store_category || null,
-        imageUrl: imagePath,
-        colorVariations: this.stringifyJsonField(color_variations, []),
-        tailorMeasurements: this.stringifyJsonField(tailor_measurements, ['chest', 'waist', 'hips', 'length']),
-        allowCustomTailoring: allow_custom_tailoring !== 'false'
+        name: data.name,
+        description: data.description || '',
+        price: data.price,
+        stock: data.stock,
+        size: data.size || '',
+        storeCategory: data.store_category || null,
+        allowCustomTailoring: data.allow_custom_tailoring,
+        colorVariations: JSON.stringify(colors),
+        tailorMeasurements: JSON.stringify(measurements),
+        imageUrl: await uploads.image(ctx, 'imageUrl', 'products', product.imageUrl || null),
+        isActive: product.isActive ?? true,
       })
       await product.save()
-      
-      const images = request.file('images')
-      if (images && Array.isArray(images)) {
-        const existingCount = await ProductImage.query().where('productId', product.id).count('* as total')
-        const startOrder = Number(existingCount[0].$extras.total)
-        
-        for (let i = 0; i < images.length; i++) {
-          const img = images[i]
-          const fileName = `${Date.now()}-${i}-${img.clientName}`
-          await img.move(app.makePath('public/uploads/products'), { name: fileName })
-          await ProductImage.create({
-            productId: product.id,
-            imageUrl: `/uploads/products/${fileName}`,
-            sortOrder: startOrder + i
-          })
+      const removed = this.jsonArray(ctx, 'removed_images', [])
+      if (removed.some((id) => !Number.isInteger(id) || Number(id) < 1))
+        fieldError('removed_images', 'Invalid gallery photo selection.')
+      if (removed.length)
+        await ProductImage.query({ client: trx })
+          .where('productId', product.id)
+          .whereIn('id', removed as number[])
+          .delete()
+      const existingImages = await ProductImage.query({ client: trx })
+        .where('productId', product.id)
+        .orderBy('sortOrder')
+      const gallery = await uploads.images(ctx, 'galleryImages', 'products')
+      if (existingImages.length + gallery.length > 2)
+        fieldError('galleryImages', 'Keep up to 2 additional photos per product.')
+      let sortOrder = (existingImages.at(-1)?.sortOrder ?? -1) + 1
+      for (const imageUrl of gallery)
+        await ProductImage.create(
+          { productId: product.id, imageUrl, sortOrder: sortOrder++ },
+          { client: trx }
+        )
+      await this.audit(
+        ctx,
+        trx,
+        editing ? 'admin_update' : 'admin_create',
+        'product',
+        product.id,
+        `${editing ? 'Updated' : 'Created'} product ${product.name}`
+      )
+    })
+  }
+  async deleteProduct(ctx: HttpContext) {
+    return this.mutate(ctx, async (_, trx) => {
+      const product = await Product.findOrFail(ctx.params.id, { client: trx })
+      await ProductImage.query({ client: trx }).where('productId', product.id).delete()
+      await product.delete()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_delete',
+        'product',
+        product.id,
+        `Deleted product ${product.name}`
+      )
+    })
+  }
+  async deleteProductImage(ctx: HttpContext) {
+    return this.mutate(ctx, async (_, trx) => {
+      const image = await ProductImage.findOrFail(ctx.params.id, { client: trx })
+      await image.delete()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_update',
+        'product',
+        image.productId,
+        'Removed a product gallery image'
+      )
+    })
+  }
+  async updateOrderStatus(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(orderValidator)
+    return this.mutate(ctx, async (_, trx) => {
+      const order = await Order.query({ client: trx })
+        .where('id', ctx.params.id)
+        .forUpdate()
+        .firstOrFail()
+      let status = data.status || order.status
+      let stage = data.trackingStage || order.trackingStage || 'received'
+      const changedStatus = data.status && data.status !== order.status
+      const changedStage = data.trackingStage && data.trackingStage !== order.trackingStage
+      if (changedStage)
+        status =
+          stage === 'delivered'
+            ? 'delivered'
+            : stage === 'shipped'
+              ? 'shipped'
+              : stage === 'packaged'
+                ? 'processing'
+                : 'pending'
+      else if (changedStatus && status !== 'cancelled')
+        stage = status === 'delivered' ? 'delivered' : status === 'shipped' ? 'shipped' : 'received'
+      if ((status === 'cancelled') !== (order.status === 'cancelled')) {
+        await order.load('items')
+        for (const item of [...order.items].sort(
+          (a, b) => (a.productId || 0) - (b.productId || 0)
+        )) {
+          if (!item.productId) continue
+          const product = await Product.query({ client: trx })
+            .where('id', item.productId)
+            .forUpdate()
+            .first()
+          if (!product) continue
+          if (status !== 'cancelled' && product.stock < item.quantity)
+            fieldError('status', `Not enough stock to reopen this order: ${product.name}.`)
+          product.stock += status === 'cancelled' ? item.quantity : -item.quantity
+          await product.save()
         }
       }
-      
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error updating product:', error)
-      if (request.accepts(['json', 'html']) === 'json') {
-        return response.status(500).json({ error: 'Failed to update product', detail: this.errorMessage(error) })
-      }
-      session.flash('errors', { form: `Failed to update product: ${this.errorMessage(error)}` })
-      return response.redirect().back()
-    }
-  }
-
-  async deleteProduct({ params, response }: HttpContext) {
-    try {
-      const product = await Product.findOrFail(params.id)
-      await product.related('images').query().delete()
-      await product.delete()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error deleting product:', error)
-      return response.redirect().back()
-    }
-  }
-
-  async deleteProductImage({ params, response }: HttpContext) {
-    try {
-      const image = await ProductImage.findOrFail(params.id)
-      await image.delete()
-      return response.json({ success: true })
-    } catch (error) {
-      console.error('Error deleting product image:', error)
-      return response.status(500).json({ error: 'Failed to delete image' })
-    }
-  }
-
-  // ============ ORDERS ============
-  
-  async orders({ inertia }: HttpContext) {
-    const orders = await Order.query()
-      .preload('user', (userQuery) => {
-        userQuery.select(['id', 'fullName', 'email'])
-      })
-      .preload('items', (itemsQuery) => {
-        itemsQuery.preload('product')
-      })
-      .orderBy('createdAt', 'desc')
-    
-    const totalOrders = await Order.query().count('* as total')
-    const totalRevenue = await Order.query().sum('total_amount as sum')
-    const pendingOrders = await Order.query().where('status', 'pending').count('* as total')
-    const completedOrders = await Order.query().where('status', 'delivered').count('* as total')
-    
-    const orderStats = {
-      totalOrders: Number(totalOrders[0].$extras.total),
-      totalRevenue: Number(totalRevenue[0].$extras.sum || 0),
-      pendingOrders: Number(pendingOrders[0].$extras.total),
-      completedOrders: Number(completedOrders[0].$extras.total)
-    }
-    
-    return inertia.render('dashboard/admin/index', { 
-      activeTab: 'orders',
-      orders: orders.map(o => ({
-        id: o.id,
-        order_number: o.orderNumber,
-        customer_name: o.customerName,
-        total_amount: o.totalAmount,
-        status: o.status,
-        tracking_stage: o.trackingStage || 'received',
-        created_at: o.createdAt ? o.createdAt.toFormat('yyyy-MM-dd') : 'Unknown'
-      })),
-      stats: orderStats
-    })
-  }
-
-  async updateOrderStatus({ params, request, response }: HttpContext) {
-    try {
-      const order = await Order.findOrFail(params.id)
-      const { status, trackingStage } = request.all()
-      
-      if (status) order.status = status
-      if (trackingStage) {
-        order.trackingStage = trackingStage
-        if (trackingStage === 'received' && !order.receivedAt) order.receivedAt = DateTime.now()
-        if (trackingStage === 'packaged' && !order.packagedAt) order.packagedAt = DateTime.now()
-        if (trackingStage === 'shipped' && !order.shippedAt) order.shippedAt = DateTime.now()
-        if (trackingStage === 'delivered' && !order.deliveredAt) order.deliveredAt = DateTime.now()
-      }
+      order.status = status
+      if (data.paymentStatus) order.paymentStatus = data.paymentStatus
+      order.trackingStage = stage
+      const now = DateTime.now()
+      if (!order.receivedAt) order.receivedAt = now
+      if (['packaged', 'shipped', 'delivered'].includes(stage) && !order.packagedAt)
+        order.packagedAt = now
+      if (['shipped', 'delivered'].includes(stage) && !order.shippedAt) order.shippedAt = now
+      if (stage === 'delivered' && !order.deliveredAt) order.deliveredAt = now
+      if (stage !== 'delivered') order.deliveredAt = null
+      if (!['shipped', 'delivered'].includes(stage)) order.shippedAt = null
+      if (stage === 'received') order.packagedAt = null
       await order.save()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error updating order:', error)
-      return response.redirect().back()
-    }
+      await this.audit(
+        ctx,
+        trx,
+        'order_update',
+        'order',
+        order.id,
+        `Order ${order.orderNumber}: ${status}, ${stage}`
+      )
+    })
   }
-
   async getOrderDetails({ params, response }: HttpContext) {
-    try {
-      const order = await Order.query()
-        .where('id', params.id)
-        .preload('user', (userQuery) => {
-          userQuery.select(['id', 'fullName', 'email'])
-        })
-        .preload('items', (itemsQuery) => {
-          itemsQuery.preload('product')
-        })
-        .firstOrFail()
-      
-      const formattedItems = order.items.map(item => ({
-        id: item.id,
-        product_name: item.product?.name || item.productName,
-        quantity: item.quantity,
-        price: item.price,
-        size: item.size
-      }))
-      
-      return response.json({
-        id: order.id,
-        order_number: order.orderNumber,
-        customer_name: order.customerName,
-        total_amount: order.totalAmount,
-        status: order.status,
-        tracking_stage: order.trackingStage || 'received',
-        created_at: order.createdAt ? order.createdAt.toFormat('yyyy-MM-dd') : 'Unknown',
-        items: formattedItems,
-        user: order.user ? {
-          fullName: order.user.fullName,
-          email: order.user.email
-        } : null
-      })
-    } catch (error) {
-      console.error('Error fetching order details:', error)
-      return response.status(404).json({ error: 'Order not found' })
-    }
+    const order = await Order.query()
+      .where('id', params.id)
+      .preload('user')
+      .preload('items')
+      .firstOrFail()
+    return response.json(orderData(order))
   }
-
-  // ============ ACTIVITY ============
-  
-  async activity({ inertia }: HttpContext) {
-    const activities = await Activity.query()
-      .orderBy('createdAt', 'desc')
-      .limit(100)
-    
-    const totalWishlists = await Activity.query()
-      .where('type', 'wishlist')
-      .count('* as total')
-    const totalCartAdds = await Activity.query()
-      .where('type', 'cart')
-      .count('* as total')
-    const totalViews = await Activity.query()
-      .where('type', 'view')
-      .count('* as total')
-    
-    const activityStats = {
-      totalWishlists: Number(totalWishlists[0].$extras.total),
-      totalCartAdds: Number(totalCartAdds[0].$extras.total),
-      totalViews: Number(totalViews[0].$extras.total)
-    }
-    
-    return inertia.render('dashboard/admin/index', { 
-      activeTab: 'activity',
-      activities: activities.map(a => ({
-        ...a.toJSON(),
-        created_at: a.createdAt ? a.createdAt.toFormat('yyyy-MM-dd HH:mm') : 'Just now'
-      })),
-      stats: activityStats
-    })
-  }
-
-  // ============ USERS ============
-  
-  async users({ inertia }: HttpContext) {
-    const users = await User.query()
-      .orderBy('createdAt', 'desc')
-    
-    const userStats = {
-      totalUsers: await User.query().count('* as total').then(r => Number(r[0].$extras.total)),
-      activeUsers: await User.query().where('isActive', true).count('* as total').then(r => Number(r[0].$extras.total)),
-      adminUsers: await User.query().where('role', 'admin').count('* as total').then(r => Number(r[0].$extras.total))
-    }
-    
-    return inertia.render('dashboard/admin/index', {
-      activeTab: 'users',
-      users: users.map(u => u.toJSON()),
-      stats: userStats
-    })
-  }
-
-  async updateUserStatus({ params, request, response }: HttpContext) {
-    try {
-      const user = await User.findOrFail(params.id)
-      const { isActive, role } = request.all()
-      
-      if (isActive !== undefined) user.isActive = isActive
-      if (role) user.role = role
-      await user.save()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error updating user:', error)
-      return response.redirect().back()
-    }
-  }
-
-  async deleteUser({ params, response }: HttpContext) {
-    try {
-      const user = await User.findOrFail(params.id)
-      await user.delete()
-      return response.redirect().back()
-    } catch (error) {
-      console.error('Error deleting user:', error)
-      return response.redirect().back()
-    }
-  }
-
-  // ============ API ROUTES ============
-  
-  async stats({ response }: HttpContext) {
-    const productsCount = await Product.query().count('* as total')
-    const ordersCount = await Order.query().count('* as total')
-    const worksCount = await Work.query().count('* as total')
-    const categoriesCount = await Category.query().count('* as total')
-    const totalWishlists = await Activity.query().where('type', 'wishlist').count('* as total')
-    const totalRevenue = await Order.query().sum('total_amount as sum')
-    const pendingOrders = await Order.query().where('status', 'pending').count('* as total')
-    
-    return response.json({
-      totalProducts: Number(productsCount[0].$extras.total),
-      totalOrders: Number(ordersCount[0].$extras.total),
-      totalWorks: Number(worksCount[0].$extras.total),
-      totalCategories: Number(categoriesCount[0].$extras.total),
-      totalWishlists: Number(totalWishlists[0].$extras.total),
-      totalRevenue: Number(totalRevenue[0].$extras.sum || 0),
-      pendingOrders: Number(pendingOrders[0].$extras.total)
-    })
-  }
-
-  async recentActivity({ response }: HttpContext) {
-    const activities = await Activity.query()
-      .orderBy('createdAt', 'desc')
-      .limit(10)
-    
-    return response.json(activities.map(a => ({
-      id: a.id,
-      action: a.description || `${a.type} activity`,
-      created_at: a.createdAt ? a.createdAt.toFormat('yyyy-MM-dd HH:mm') : 'Just now'
-    })))
-  }
-
-  async popularProducts({ response }: HttpContext) {
-    const results = await Activity.query()
-      .where('entityType', 'product')
-      .select('entityId')
-      .count('* as count')
-      .groupBy('entityId')
-      .orderBy('count', 'desc')
-      .limit(5)
-    
-    const popularWithProducts = []
-    for (const r of results) {
-      const product = await Product.find(r.$extras.entityId || r.entityId)
-      if (product) {
-        popularWithProducts.push({
-          id: product.id,
-          title: product.name,
-          category: product.storeCategory || 'Uncategorized',
-          wishlist_count: Number(r.$extras.count)
-        })
+  async updateUserStatus(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(userStatusValidator)
+    return this.mutate(ctx, async (_, trx) => {
+      const user = await User.findOrFail(ctx.params.id, { client: trx })
+      const removingAdmin =
+        user.role === 'admin' && (data.role === 'user' || data.isActive === false)
+      if ((data.isActive === false || data.role === 'user') && user.id === ctx.auth.user?.id)
+        fieldError('form', 'You cannot deactivate or demote your own account.')
+      if (removingAdmin) {
+        const admins = await User.query({ client: trx })
+          .where('role', 'admin')
+          .where('isActive', true)
+          .forUpdate()
+        if (admins.length <= 1 && user.isActive)
+          fieldError('form', 'Keep at least one active administrator.')
       }
-    }
-    
-    return response.json(popularWithProducts)
+      user.merge(data)
+      if (data.isActive === false) {
+        user.presenceOnline = false
+        await trx.from('remember_me_tokens').where('tokenable_id', user.id).delete()
+      }
+      await user.save()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_update',
+        'user',
+        user.id,
+        `Updated account ${user.fullName || user.email}`
+      )
+    })
+  }
+  async deleteUser(ctx: HttpContext) {
+    return this.mutate(ctx, async (_, trx) => {
+      const user = await User.findOrFail(ctx.params.id, { client: trx })
+      if (user.id === ctx.auth.user?.id) fieldError('form', 'You cannot delete your own account.')
+      if (user.role === 'admin' && user.isActive) {
+        const admins = await User.query({ client: trx })
+          .where('role', 'admin')
+          .where('isActive', true)
+          .forUpdate()
+        if (admins.length <= 1) fieldError('form', 'Keep at least one active administrator.')
+      }
+      await user.delete()
+      await this.audit(
+        ctx,
+        trx,
+        'admin_delete',
+        'user',
+        user.id,
+        `Deleted account ${user.fullName || user.email}`
+      )
+    })
+  }
+  async updateFitting(ctx: HttpContext) {
+    const data = await ctx.request.validateUsing(fittingStatusValidator)
+    return this.mutate(ctx, async (_, trx) => {
+      const fitting = await trx.from('fitting_requests').where('id', ctx.params.id).firstOrFail()
+      await trx
+        .from('fitting_requests')
+        .where('id', fitting.id)
+        .update({ status: data.status, updated_at: new Date() })
+      await this.audit(
+        ctx,
+        trx,
+        'fitting_update',
+        'fitting',
+        fitting.id,
+        `Fitting for ${fitting.name}: ${data.status}`
+      )
+    })
+  }
+  async fittingReference(ctx: HttpContext) {
+    if (!(await ctx.auth.check()) || !ctx.auth.user?.isActive || ctx.auth.user.role !== 'admin')
+      return ctx.response.unauthorized({
+        error: 'Sign in as an administrator to view private references.',
+      })
+    const fitting = await db.from('fitting_requests').where('id', ctx.params.id).firstOrFail()
+    if (!fitting.reference_image || !/^[a-f0-9-]+\.(png|jpe?g|webp)$/.test(fitting.reference_image))
+      return ctx.response.notFound()
+    ctx.response.header('Cache-Control', 'private, no-store')
+    return ctx.response.download(
+      app.makePath('storage/fitting-references', fitting.reference_image)
+    )
+  }
+  async stats({ response }: HttpContext) {
+    return response.json((await adminData()).stats)
+  }
+  async recentActivity({ response }: HttpContext) {
+    return response.json((await adminData()).recentActivity)
+  }
+  async popularProducts({ response }: HttpContext) {
+    return response.json((await adminData()).stats.popularProducts)
   }
 }

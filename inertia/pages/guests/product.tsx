@@ -29,7 +29,6 @@ export default function ProductPage({ category, works, isEmpty, error }: Props) 
   // ── Auth state from Inertia shared props ──────────────────────────────────
   const [showLightbox, setShowLightbox] = useState(false);
   const [currentImageIndex, setCurrentImageIndex] = useState(0);
-  const [allCategories, setAllCategories] = useState<Category[]>([]);
   const [nextCategory, setNextCategory] = useState<Category | null>(null);
 
   // ── Fetch all categories to find next category ─────────────────────────────
@@ -39,7 +38,6 @@ export default function ProductPage({ category, works, isEmpty, error }: Props) 
         const response = await fetch('/api/categories');
         const data = await response.json();
         if (Array.isArray(data) && data.length > 0) {
-          setAllCategories(data);
           
           // Find the next category
           if (category && data.length > 0) {
@@ -189,7 +187,7 @@ export default function ProductPage({ category, works, isEmpty, error }: Props) 
                 <p className="text-white/30 text-sm mt-2">Check back soon for new arrivals!</p>
               </div>
             ) : (
-              <div className="fade-in delay-2 columns-2 md:columns-3 lg:columns-4 gap-4 space-y-4 mb-16">
+              <div className="works-gallery fade-in delay-2 mb-16">
                 {productImages.map((image, index) => (
                   <div key={image.id} className="break-inside-avoid mb-4 cursor-pointer group" onClick={() => openLightbox(index)}>
                     <div className="w-full border border-white/20 bg-gradient-to-br from-white/5 to-white/10 hover:border-white-400 hover:scale-[1.02] transition-all duration-500 rounded-lg overflow-hidden relative">
@@ -262,11 +260,12 @@ export default function ProductPage({ category, works, isEmpty, error }: Props) 
         .delay-3 { animation-delay: 0.6s; }
         .delay-4 { animation-delay: 0.8s; }
         @keyframes fadeIn { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: translateY(0); } }
-        .columns-2 { column-count: 2; }
-        .columns-3 { column-count: 3; }
-        .columns-4 { column-count: 4; }
-        @media (max-width: 768px) { .columns-2 { column-count: 2; } }
-        @media (max-width: 640px) { .columns-2 { column-count: 1; } }
+        .works-gallery { column-count: 4; column-gap: 18px; max-width: 1120px; margin-inline: auto; }
+        .works-gallery .responsive-fashion-image { max-height: 58svh; }
+        .works-gallery .responsive-fashion-image > img { object-fit: contain; }
+        @media (max-width: 1100px) { .works-gallery { column-count: 3; } }
+        @media (max-width: 760px) { .works-gallery { column-count: 2; column-gap: 12px; } }
+        @media (max-width: 480px) { .works-gallery { column-count: 1; max-width: 300px; } }
         .line-clamp-2 { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
       `}</style>
     </>

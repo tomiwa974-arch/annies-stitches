@@ -63,6 +63,22 @@
 .magazine-soft-page.--right {
   box-shadow: inset 25px 0 24px -22px #21121d80;
 }
+/* Static binding shading must not be painted across the moving sheet. */
+.magazine-paper-reader[data-turning='true'] .magazine-deep-gutter {
+  visibility: hidden;
+}
+.magazine-soft-page:not(.--simple) {
+  box-shadow: none;
+}
+.magazine-paper-host .magazine-soft-page:not(.--simple)::after {
+  background: none;
+}
+.atelier-site.atelier-magazine .magazine-paper-host .issue-page-content {
+  scrollbar-width: none;
+}
+.magazine-paper-host .issue-page-content::-webkit-scrollbar {
+  display: none;
+}
 .magazine-soft-page::after {
   content: '';
   position: absolute;
